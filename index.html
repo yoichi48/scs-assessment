@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCS★3 ギャップアセスメント</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff;
+    --bg2: #f7f7f5;
+    --bg3: #f0ede8;
+    --border: rgba(0,0,0,0.12);
+    --border2: rgba(0,0,0,0.22);
+    --text: #1a1a18;
+    --text2: #6b6b67;
+    --text3: #9b9b97;
+    --info-bg: #edf4ff;
+    --info-border: rgba(37,99,235,0.3);
+    --info-text: #1d4ed8;
+    --success-bg: #edfdf4;
+    --success-border: rgba(22,163,74,0.3);
+    --success-text: #166534;
+    --warning-bg: #fffbeb;
+    --warning-border: rgba(217,119,6,0.3);
+    --warning-text: #92400e;
+    --danger-border: rgba(220,38,38,0.4);
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a; --bg2: #252522; --bg3: #2e2e2b;
+      --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.2);
+      --text: #e8e8e4; --text2: #9b9b97; --text3: #6b6b67;
+      --info-bg: #0f1f3d; --info-border: rgba(96,165,250,0.3); --info-text: #93c5fd;
+      --success-bg: #052e16; --success-border: rgba(74,222,128,0.3); --success-text: #86efac;
+      --warning-bg: #1c1200; --warning-border: rgba(251,191,36,0.3); --warning-text: #fcd34d;
+      --danger-border: rgba(252,165,165,0.4);
+    }
+  }
+  body {
+    font-family: -apple-system, 'Hiragino Sans', 'Yu Gothic UI', sans-serif;
+    background: var(--bg3);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    color: var(--text);
+  }
+  #app {
+    width: 100%;
+    max-width: 600px;
+    background: var(--bg);
+    border-radius: var(--radius);
+    border: 0.5px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    height: 90vh;
+    max-height: 720px;
+    overflow: hidden;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.08);
+  }
+  .hdr {
+    display: flex; align-items: center; gap: 10px;
+    padding: 13px 16px;
+    border-bottom: 0.5px solid var(--border);
+    background: var(--bg2);
+    flex-shrink: 0;
+  }
+  .hdr-icon {
+    width: 30px; height: 30px; border-radius: 7px;
+    background: var(--info-bg); border: 0.5px solid var(--info-border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600; color: var(--info-text);
+  }
+  .hdr-title { font-size: 13px; font-weight: 500; }
+  .hdr-sub { font-size: 11px; color: var(--text2); margin-left: auto; }
+  .prog { height: 2px; background: var(--border); flex-shrink: 0; }
+  .prog-fill { height: 100%; background: var(--info-text); transition: width .4s; }
+  .chat {
+    flex: 1; overflow-y: auto; padding: 16px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .chat::-webkit-scrollbar { width: 4px; }
+  .chat::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .msg { display: flex; gap: 8px; animation: fi .2s ease; }
+  .msg.u { flex-direction: row-reverse; }
+  @keyframes fi { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+  .av {
+    width: 26px; height: 26px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; flex-shrink: 0;
+  }
+  .av.ai { background: var(--info-bg); color: var(--info-text); border: 0.5px solid var(--info-border); }
+  .av.u { background: var(--bg2); color: var(--text2); border: 0.5px solid var(--border); }
+  .bbl {
+    max-width: calc(100% - 60px);
+    padding: 9px 12px;
+    border-radius: var(--radius);
+    font-size: 13px; line-height: 1.7;
+  }
+  .msg.ai .bbl {
+    background: var(--bg2); border: 0.5px solid var(--border);
+    border-top-left-radius: 3px;
+  }
+  .msg.u .bbl {
+    background: var(--info-bg); border: 0.5px solid var(--info-border);
+    border-top-right-radius: 3px; color: var(--text);
+  }
+  .hint {
+    font-size: 11px; color: var(--warning-text);
+    margin-top: 6px; padding: 4px 8px;
+    background: var(--warning-bg); border-radius: 4px;
+    border-left: 2px solid var(--warning-border);
+  }
+  .choices { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+  .c-btn {
+    background: var(--bg); border: 0.5px solid var(--border2);
+    color: var(--text); padding: 8px 12px;
+    border-radius: var(--radius-sm); cursor: pointer;
+    font-size: 12px; font-family: inherit; text-align: left;
+    transition: all .12s; display: flex; align-items: center; gap: 7px;
+  }
+  .c-btn:hover:not(:disabled) { border-color: var(--info-text); background: var(--info-bg); }
+  .c-btn.sel { border-color: var(--success-text); background: var(--success-bg); }
+  .c-btn.ask { border-style: dashed; color: var(--text2); }
+  .c-btn.ask:hover:not(:disabled) { border-color: var(--border2); background: var(--bg2); color: var(--text); }
+  .c-btn:disabled { opacity: .5; cursor: default; }
+  .num {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--border); display: flex; align-items: center; justify-content: center;
+    font-size: 10px; flex-shrink: 0; font-family: monospace;
+  }
+  .multi-wrap { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+  .m-btn {
+    background: var(--bg); border: 0.5px solid var(--border2);
+    color: var(--text); padding: 8px 12px;
+    border-radius: var(--radius-sm); cursor: pointer;
+    font-size: 12px; font-family: inherit; text-align: left;
+    transition: all .12s; display: flex; align-items: center; gap: 7px;
+  }
+  .m-btn:hover:not(:disabled) { border-color: var(--info-text); }
+  .m-btn.sel { border-color: var(--success-text); background: var(--success-bg); }
+  .m-btn:disabled { opacity: .5; cursor: default; }
+  .chk {
+    width: 14px; height: 14px; border: 0.5px solid var(--border2);
+    border-radius: 3px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 9px;
+  }
+  .m-btn.sel .chk { background: var(--success-bg); border-color: var(--success-text); color: var(--success-text); }
+  .conf-btn {
+    margin-top: 7px;
+    background: var(--info-bg); border: 0.5px solid var(--info-border);
+    color: var(--info-text); padding: 6px 14px;
+    border-radius: var(--radius-sm); cursor: pointer;
+    font-size: 12px; font-family: inherit;
+  }
+  .conf-btn:disabled { opacity: .5; cursor: default; }
+  .ti-wrap { display: flex; gap: 6px; margin-top: 7px; }
+  .ti {
+    flex: 1; background: var(--bg); border: 0.5px solid var(--border2);
+    color: var(--text); padding: 8px 12px;
+    border-radius: var(--radius-sm); font-size: 13px; font-family: inherit; outline: none;
+  }
+  .ti:focus { border-color: var(--info-text); }
+  .ti-btn {
+    background: var(--info-bg); border: 0.5px solid var(--info-border);
+    color: var(--info-text); padding: 8px 14px;
+    border-radius: var(--radius-sm); cursor: pointer;
+    font-size: 12px; font-family: inherit; white-space: nowrap;
+  }
+  .ti-btn:disabled { opacity: .5; cursor: default; }
+  .ask-area {
+    margin-top: 7px; background: var(--bg2); border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm); padding: 9px 11px;
+  }
+  .ask-lbl { font-size: 11px; color: var(--text2); margin-bottom: 5px; }
+  .typing { display: flex; gap: 3px; padding: 4px 0; }
+  .typing span {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--text3); animation: bounce 1.2s infinite;
+  }
+  .typing span:nth-child(2) { animation-delay: .2s; }
+  .typing span:nth-child(3) { animation-delay: .4s; }
+  @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
+  .banner {
+    background: var(--success-bg); border: 0.5px solid var(--success-border);
+    border-radius: var(--radius-sm); padding: 9px 12px;
+    font-size: 12px; margin-top: 8px; line-height: 1.6;
+  }
+  .claude-ans {
+    background: var(--bg); border: 0.5px solid var(--info-border);
+    border-radius: var(--radius-sm); padding: 9px 11px;
+    margin-top: 7px; font-size: 12px; line-height: 1.75;
+  }
+  .claude-ans-lbl { font-size: 10px; color: var(--info-text); margin-bottom: 5px; }
+  .sum-card {
+    background: var(--bg2); border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm); padding: 11px; margin-top: 8px;
+  }
+  .sum-card h4 { font-size: 11px; color: var(--text2); font-weight: 400; margin-bottom: 8px; }
+  .sum-row {
+    display: flex; justify-content: space-between;
+    padding: 4px 0; border-bottom: 0.5px solid var(--border); font-size: 11px;
+  }
+  .sum-row:last-child { border-bottom: none; }
+  .sum-lbl { color: var(--text2); }
+  .sub-btn {
+    background: var(--success-bg); border: 0.5px solid var(--success-border);
+    color: var(--success-text); padding: 11px;
+    border-radius: var(--radius-sm); cursor: pointer;
+    font-size: 14px; font-family: inherit; font-weight: 500;
+    margin-top: 10px; width: 100%; transition: opacity .12s;
+  }
+  .sub-btn:hover:not(:disabled) { opacity: .85; }
+  .sub-btn:disabled { opacity: .5; cursor: default; }
+  .qno { font-size: 10px; color: var(--text3); margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="hdr">
+    <div class="hdr-icon">S</div>
+    <div class="hdr-title">SCS★3 ギャップアセスメント</div>
+    <div class="hdr-sub" id="hdr-sub">認証中...</div>
+  </div>
+  <div class="prog"><div class="prog-fill" id="prog" style="width:0%"></div></div>
+  <div class="chat" id="chat"></div>
+</div>
+
+<script>
+const CF_BASE = 'https://asia-northeast1-scs-star3-service.cloudfunctions.net';
+
+const Qs = [
+  { id:'B3_1', text:'情報セキュリティに関する社内ルールはどの程度整備されていますか？', hint:'💡 参照規程: POL-001 / GOV-001', type:'single',
+    choices:['文書化・定期見直し・全員周知済み','文書化・周知のみ','口頭ルールのみ','なし'] },
+  { id:'B3_2', text:'情報セキュリティ対応方針の策定・周知状況はいかがですか？', hint:'💡 参照規程: POL-001 情報セキュリティ対応方針', type:'single',
+    choices:['制定・全員周知・参照可能','制定のみ','なし'] },
+  { id:'B3_4', text:'経営層によるセキュリティへの関与はどの程度ありますか？', hint:'💡 参照規程: GOV-001 推進体制規程', type:'single',
+    choices:['仕組みあり・定期実施','必要時のみ','なし'] },
+  { id:'cloud', text:'現在利用中のクラウドサービスを選択してください（複数選択可）', hint:'💡 参照規程: ISM-001 情報資産管理規程', type:'multi',
+    choices:['Microsoft 365 / Teams','Google Workspace','AWS / Azure / GCP','Salesforce / kintone等','利用していない'] },
+  { id:'B3_17', text:'ID（アカウント）の申請・承認プロセスはどのように管理されていますか？', hint:'💡 参照規程: ACC-001 アクセス権管理規程', type:'single',
+    choices:['申請・承認プロセスあり・記録保管','管理者判断で付与','プロセスなし'] },
+  { id:'B3_21', text:'多要素認証（MFA）を導入しているシステムを選択してください（複数選択可）', hint:'💡 参照規程: ACC-001 アクセス権管理規程', type:'multi',
+    choices:['VPN・リモートアクセス','社内基幹システム','クラウドサービス（M365等）','導入していない'] },
+  { id:'B3_28', text:'従業員向けセキュリティ教育・訓練はどの程度実施していますか？', hint:'💡 参照規程: EDU-001 セキュリティ教育規程', type:'single',
+    choices:['年1回以上・全員・記録あり','不定期実施','未実施'] },
+  { id:'B3_36', text:'インシデント対応手順の整備状況はいかがですか？', hint:'💡 参照規程: INC-001 インシデント対応規程', type:'single',
+    choices:['手順書あり・訓練実施・記録','手順書のみ','未整備'] },
+];
+
+const st = { phase:'auth', company:null, answers:{}, q:0, multi:[] };
+const chat = document.getElementById('chat');
+const prog = document.getElementById('prog');
+const hdrSub = document.getElementById('hdr-sub');
+
+function setProg(){
+  const total=Qs.length+2;
+  const done=st.phase==='done'?total:st.phase==='summary'?Qs.length+1:st.phase==='questions'?st.q+1:st.phase==='intro'?1:0;
+  prog.style.width=(done/total*100)+'%';
+  hdrSub.textContent=st.company?st.company.company_name+' | Q'+Math.min(st.q+1,Qs.length)+'/'+Qs.length:'認証中...';
+}
+function scroll(){ setTimeout(()=>chat.scrollTop=chat.scrollHeight,40); }
+function addMsg(type,html){
+  const d=document.createElement('div');
+  d.className='msg '+type;
+  d.innerHTML='<div class="av '+type+'">'+(type==='ai'?'S':'担')+'</div><div class="bbl">'+html+'</div>';
+  chat.appendChild(d); scroll(); return d;
+}
+let typEl=null;
+function showTyping(){ typEl=addMsg('ai','<div class="typing"><span></span><span></span><span></span></div>'); }
+function hideTyping(){ if(typEl){typEl.remove();typEl=null;} }
+function delay(ms){ return new Promise(r=>setTimeout(r,ms)); }
+async function aiMsg(html,ms=450){ showTyping(); await delay(ms); hideTyping(); addMsg('ai',html); }
+
+async function callAskClaude(question, context){
+  const res = await fetch(CF_BASE+'/askClaude', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ question, context })
+  });
+  const data = await res.json();
+  if(!data.ok) throw new Error(data.error||'エラーが発生しました');
+  return data.answer;
+}
+
+async function callTenantInfo(tid, email){
+  const res = await fetch(CF_BASE+'/getTenantInfo', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ tenant_id: tid, email })
+  });
+  const data = await res.json();
+  if(!data.ok) throw new Error(data.error||'認証に失敗しました');
+  return data;
+}
+
+async function startAuth(){
+  await aiMsg('こんにちは。SCS★3ギャップアセスメントを始めます。<br>会員番号とメールアドレスを入力してください。',500);
+  const d=document.createElement('div');
+  d.className='msg ai';
+  d.innerHTML=`<div class="av ai">S</div><div class="bbl">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <input class="ti" id="tid" placeholder="会員番号（例: 800801）" maxlength="10">
+      <input class="ti" id="eid" placeholder="メールアドレス" type="email">
+      <button class="ti-btn" id="auth-btn" style="align-self:flex-start">確認する →</button>
+    </div>
+  </div>`;
+  chat.appendChild(d); scroll();
+  document.getElementById('tid').focus();
+  const doAuth=async()=>{
+    const tid=document.getElementById('tid').value.trim();
+    const email=document.getElementById('eid').value.trim();
+    if(!tid||!email) return;
+    ['tid','eid','auth-btn'].forEach(id=>document.getElementById(id).disabled=true);
+    addMsg('u',tid+' / '+email);
+    showTyping();
+    try{
+      const data=await callTenantInfo(tid,email);
+      hideTyping();
+      st.company=data.company; st.phase='intro'; setProg(); startIntro(data);
+    }catch(e){
+      hideTyping(); addMsg('ai','⚠ '+e.message);
+      ['tid','eid','auth-btn'].forEach(id=>document.getElementById(id).disabled=false);
+    }
+  };
+  document.getElementById('auth-btn').addEventListener('click',doAuth);
+  document.getElementById('eid').addEventListener('keydown',e=>{ if(e.key==='Enter')doAuth(); });
+}
+
+async function startIntro(data){
+  const c=data.company;
+  const regs=data.analyzed_regulations&&data.analyzed_regulations.length>0
+    ?'<br>解析済み規程: <strong>'+data.analyzed_regulations.map(r=>r.regulation_name).join('、')+'</strong>':'';
+  await aiMsg(`<div class="banner"><strong>${c.company_name}</strong>（${c.employee_range||''}）CISO: ${c.ciso_name||'未設定'}${regs}</div>`,700);
+  await delay(200);
+  await aiMsg(`これから<strong>${Qs.length}問</strong>お聞きします。分からない点は「わからない・質問する」からいつでも質問できます。`+
+    `<div class="choices"><button class="c-btn" id="start-btn"><span class="num">→</span>はじめる</button></div>`,600);
+  document.getElementById('start-btn').addEventListener('click',()=>{
+    addMsg('u','はじめます'); st.phase='questions'; st.q=0; setProg(); setTimeout(askQ,350);
+  });
+}
+
+async function askQ(){
+  if(st.q>=Qs.length){ showSummary(); return; }
+  const q=Qs[st.q]; setProg();
+  if(q.type==='single'){
+    const ch=q.choices.map((c,i)=>`<button class="c-btn" data-v="${c}"><span class="num">${i+1}</span>${c}</button>`).join('')
+      +`<button class="c-btn ask" id="ask-btn-${q.id}"><span class="num">?</span>わからない・質問する</button>`;
+    await aiMsg(`<div class="qno">Q${st.q+1}/${Qs.length}</div>${q.text}<div class="hint">${q.hint}</div><div class="choices" id="c-${q.id}">${ch}</div>`,450);
+    bindSingle(q); bindAsk(q);
+  } else {
+    st.multi=[];
+    const ch=q.choices.map(c=>`<button class="m-btn" data-v="${c}"><span class="chk"></span>${c}</button>`).join('');
+    await aiMsg(`<div class="qno">Q${st.q+1}/${Qs.length}（複数選択可）</div>${q.text}<div class="hint">${q.hint}</div>`+
+      `<div class="multi-wrap" id="m-${q.id}">${ch}</div>`+
+      `<div style="display:flex;gap:6px;margin-top:7px"><button class="conf-btn" id="conf-${q.id}">選択を確定する →</button>`+
+      `<button class="c-btn ask" id="ask-btn-${q.id}" style="margin:0;font-size:11px"><span class="num">?</span>質問する</button></div>`,450);
+    bindMulti(q); bindAsk(q);
+  }
+}
+
+function bindSingle(q){
+  document.querySelectorAll(`#c-${q.id} .c-btn:not(.ask)`).forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll(`#c-${q.id} .c-btn`).forEach(b=>{ b.disabled=true; b.classList.toggle('sel',b===btn); });
+      st.answers[q.id]=btn.dataset.v; addMsg('u',btn.dataset.v); st.q++; setTimeout(askQ,300);
+    });
+  });
+}
+function bindMulti(q){
+  document.querySelectorAll(`#m-${q.id} .m-btn`).forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const v=btn.dataset.v;
+      if(st.multi.includes(v)){ st.multi=st.multi.filter(x=>x!==v); btn.classList.remove('sel'); btn.querySelector('.chk').textContent=''; }
+      else{ st.multi.push(v); btn.classList.add('sel'); btn.querySelector('.chk').textContent='✓'; }
+    });
+  });
+  document.getElementById(`conf-${q.id}`).addEventListener('click',()=>{
+    if(!st.multi.length) st.multi=['選択なし'];
+    document.querySelectorAll(`#m-${q.id} .m-btn`).forEach(b=>b.disabled=true);
+    document.getElementById(`conf-${q.id}`).disabled=true;
+    document.getElementById(`ask-btn-${q.id}`).disabled=true;
+    st.answers[q.id]=[...st.multi]; addMsg('u',st.multi.join('、')); st.q++; setTimeout(askQ,300);
+  });
+}
+function bindAsk(q){
+  const btn=document.getElementById(`ask-btn-${q.id}`);
+  if(!btn) return;
+  btn.addEventListener('click',()=>{
+    btn.disabled=true;
+    const area=document.createElement('div');
+    area.className='ask-area';
+    area.innerHTML=`<div class="ask-lbl">質問を入力してください（Claude が回答します）</div>`+
+      `<div class="ti-wrap"><input class="ti" id="ai-${q.id}" placeholder="例: 整備状況がよくわかりません" style="font-size:12px">`+
+      `<button class="ti-btn" id="as-${q.id}">送信</button></div>`+
+      `<div id="aa-${q.id}"></div>`;
+    btn.closest('.bbl').appendChild(area); scroll();
+    document.getElementById(`ai-${q.id}`).focus();
+    const doAsk=async()=>{
+      const inp=document.getElementById(`ai-${q.id}`);
+      const sb=document.getElementById(`as-${q.id}`);
+      const txt=inp.value.trim(); if(!txt) return;
+      inp.disabled=true; sb.disabled=true;
+      addMsg('u',txt);
+      const aa=document.getElementById(`aa-${q.id}`);
+      aa.innerHTML='<div class="claude-ans"><div class="claude-ans-lbl">Claude が回答中...</div><div class="typing"><span></span><span></span><span></span></div></div>';
+      scroll();
+      try{
+        const ans=await callAskClaude(txt,q.text);
+        aa.innerHTML=`<div class="claude-ans"><div class="claude-ans-lbl">Claude の回答</div>${ans.replace(/\n/g,'<br>')}</div>`;
+        inp.value=''; inp.disabled=false; sb.disabled=false; inp.placeholder='続けて質問できます';
+        if(q.type==='single') document.querySelectorAll(`#c-${q.id} .c-btn:not(.ask)`).forEach(b=>b.disabled=false);
+        else{ const cf=document.getElementById(`conf-${q.id}`); if(cf)cf.disabled=false; document.querySelectorAll(`#m-${q.id} .m-btn`).forEach(b=>b.disabled=false); }
+      }catch(e){
+        aa.innerHTML=`<div class="claude-ans" style="border-color:var(--danger-border)">⚠ ${e.message}</div>`;
+        inp.disabled=false; sb.disabled=false;
+      }
+      scroll();
+    };
+    document.getElementById(`as-${q.id}`).addEventListener('click',doAsk);
+    document.getElementById(`ai-${q.id}`).addEventListener('keydown',e=>{ if(e.key==='Enter')doAsk(); });
+  },{once:true});
+}
+
+async function showSummary(){
+  st.phase='summary'; setProg();
+  const rows=Object.entries(st.answers).map(([id,val])=>{
+    const q=Qs.find(x=>x.id===id);
+    const v=Array.isArray(val)?val.join('、'):val;
+    return `<div class="sum-row"><span class="sum-lbl">${q?q.text.slice(0,16)+'…':id}</span><span style="font-weight:500;max-width:55%;text-align:right;font-size:11px">${v}</span></div>`;
+  }).join('');
+  await aiMsg(`回答が完了しました。内容を確認してギャップ推定を実行してください。
+    <div class="sum-card"><h4>回答サマリー（${Object.keys(st.answers).length}問）</h4>${rows}</div>
+    <button class="sub-btn" id="sub-btn">ギャップ推定を実行する</button>`,600);
+  document.getElementById('sub-btn').addEventListener('click',async()=>{
+    document.getElementById('sub-btn').disabled=true;
+    document.getElementById('sub-btn').textContent='送信中...';
+    addMsg('u','ギャップ推定を実行します');
+    showTyping(); await delay(1800); hideTyping();
+    st.phase='done'; setProg();
+    addMsg('ai',`<div style="text-align:center;padding:10px 0">
+      <div style="font-size:28px;margin-bottom:8px">✅</div>
+      <div style="font-size:15px;font-weight:500;margin-bottom:6px">ギャップ推定が完了しました</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.75">Notionのチェックリストに結果を反映しました。<br>専門家が確認し、対策ロードマップをお届けします。</div>
+    </div>`);
+  });
+}
+
+startAuth();
+setProg();
+</script>
+</body>
+</html>
