@@ -258,6 +258,12 @@ function showUploadForm(){
   d.innerHTML=`<div class="av ai">S</div><div class="bbl">
     <div class="upload-card">
       <h4>規程ファイルのアップロード</h4>
+      <div style="background:#fffbeb;border:1px solid #fbbf24;border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:11px;color:#92400e;line-height:1.6">
+        <strong>ご注意ください</strong><br>
+        ・ファイルサイズは5MB以下、目安として20ページ以内の規程を推奨します<br>
+        ・ページ数の多い規程は章ごとに分割してアップロードすると精度が向上します<br>
+        ・解析には10分程度かかります。完了するまでお待ちください
+      </div>
       <div class="sel-wrap">
         <label class="file-label" id="file-label">
           <span>📎</span><span id="file-label-text">ファイルを選択（PDF / docx）</span>
@@ -265,6 +271,7 @@ function showUploadForm(){
         </label>
         <div class="file-name" id="file-name-disp"></div>
         <div class="prog-bar" id="upload-prog-wrap" style="display:none"><div class="prog-bar-fill" id="upload-prog" style="width:0%"></div></div>
+        <div id="upload-status-msg" style="display:none;font-size:11px;color:var(--text2);margin:6px 0;text-align:center"></div>
         <button class="upload-btn" id="do-upload-btn" disabled>解析を開始する</button>
         <button class="skip-btn" id="done-upload-btn">アップロードを終えてヒアリングへ進む →</button>
       </div>
@@ -275,7 +282,15 @@ function showUploadForm(){
   document.getElementById('reg-file').addEventListener('change',e=>{
     const f=e.target.files[0];
     if(!f) return;
+    // ファイルサイズチェック（5MB）
+    if(f.size > 5 * 1024 * 1024){
+      document.getElementById('file-name-disp').textContent='⚠ ファイルサイズが5MBを超えています。分割してアップロードしてください。';
+      document.getElementById('file-name-disp').style.color='#dc2626';
+      document.getElementById('do-upload-btn').disabled=true;
+      return;
+    }
     document.getElementById('file-name-disp').textContent=f.name;
+    document.getElementById('file-name-disp').style.color='';
     document.getElementById('do-upload-btn').disabled=false;
   });
 
@@ -287,10 +302,18 @@ function showUploadForm(){
     document.getElementById('done-upload-btn').disabled=true;
     document.getElementById('upload-prog-wrap').style.display='block';
 
-    // プログレスアニメーション
+    // 解析中ステータス表示
+    const statusEl=document.getElementById('upload-status-msg');
+    statusEl.style.display='block';
+    const statusMsgs=['規程テキストを抽出中...','AIが規程を読み込んでいます...','大分類ごとに評価中（7段階）...','もう少しお待ちください...','まもなく完了します...'];
+    let msgIdx=0;
+    statusEl.textContent=statusMsgs[0];
+    const statusTimer=setInterval(()=>{ msgIdx=Math.min(msgIdx+1,statusMsgs.length-1); statusEl.textContent=statusMsgs[msgIdx]; },90000);
+
+    // プログレスアニメーション（10分＝600秒を想定）
     let pct=0;
     const progEl=document.getElementById('upload-prog');
-    const progTimer=setInterval(()=>{ pct=Math.min(pct+3,85); progEl.style.width=pct+'%'; },300);
+    const progTimer=setInterval(()=>{ pct=Math.min(pct+0.5,90); progEl.style.width=pct+'%'; },3000);
 
     try{
       const base64=await fileToBase64(file);
@@ -306,7 +329,8 @@ function showUploadForm(){
         analysis_db_id: ANALYSIS_DB_ID,
       });
 
-      clearInterval(progTimer); progEl.style.width='100%';
+      clearInterval(progTimer); clearInterval(statusTimer); progEl.style.width='100%';
+      statusEl.style.display='none';
 
       const s=result.summary||'';
       const regName=result.regulation_name||file.name;
@@ -326,7 +350,8 @@ function showUploadForm(){
       addMsg('ai','続けて別の規程をアップロードするか、ヒアリングへ進んでください。');
 
     }catch(e){
-      clearInterval(progTimer);
+      clearInterval(progTimer); clearInterval(statusTimer);
+      statusEl.style.display='none';
       addMsg('ai',`⚠ アップロードに失敗しました: ${e.message}`);
       document.getElementById('do-upload-btn').disabled=false;
       document.getElementById('done-upload-btn').disabled=false;
