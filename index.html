@@ -318,7 +318,64 @@ function showUploadForm(){
     try{
       const base64=await fileToBase64(file);
       const mimeType=file.name.endsWith('.pdf')?'application/pdf':'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-      addMsg('u',`「${file.name}」をアップロード中...`);
+
+      // Step 1: dry_run で見積もりを取得
+      statusEl.textContent='規程テキストを抽出中...';
+      const estimate=await apiPost('analyzeRegulation',{
+        tenant_id: st.tenantId,
+        regulation_type: 'その他',
+        file_name: file.name,
+        file_base64: base64,
+        mime_type: mimeType,
+        analysis_db_id: ANALYSIS_DB_ID,
+        dry_run: true,
+      });
+
+      clearInterval(progTimer); clearInterval(statusTimer);
+      progEl.style.width='15%';
+
+      const est=estimate.estimate;
+      const needsConfirm=est.needs_throttle;
+
+      if(needsConfirm){
+        // 長時間かかる場合は確認を求める
+        statusEl.style.display='none';
+        document.getElementById('upload-prog-wrap').style.display='none';
+
+        const confirmMsg=`この規程は ${est.text_length.toLocaleString()}文字（推定${est.estimated_tokens.toLocaleString()}トークン）です。\n解析には約${est.estimated_minutes}分かかります。\n\n規程を章ごとに分割してアップロードすると、処理時間を短縮でき精度も向上します。\n\nこのまま解析を開始しますか？`;
+
+        addMsg('ai',`<div class="banner" style="background:#fffbeb;border-color:#fbbf24">
+          <strong>⏱ 処理時間の見積もり</strong><br>
+          <span style="font-size:12px">テキスト: ${est.text_length.toLocaleString()}文字 / 推定処理時間: 約${est.estimated_minutes}分</span><br>
+          <span style="font-size:11px;color:#92400e">規程を章ごとに分割すると処理時間を短縮でき、精度も向上します</span><br>
+          <button class="upload-btn" id="confirm-analyze-btn" style="margin-top:8px;font-size:12px">このまま解析を開始する（約${est.estimated_minutes}分）</button>
+          <button class="skip-btn" id="cancel-analyze-btn" style="margin-top:4px;font-size:11px">キャンセルして分割する</button>
+        </div>`);
+
+        const userChoice=await new Promise(resolve=>{
+          document.getElementById('confirm-analyze-btn').addEventListener('click',()=>resolve(true));
+          document.getElementById('cancel-analyze-btn').addEventListener('click',()=>resolve(false));
+        });
+
+        if(!userChoice){
+          addMsg('ai','解析をキャンセルしました。規程を分割してから再度アップロードしてください。');
+          document.getElementById('reg-file').value='';
+          document.getElementById('file-name-disp').textContent='';
+          document.getElementById('do-upload-btn').disabled=true;
+          document.getElementById('done-upload-btn').disabled=false;
+          return;
+        }
+      }
+
+      // Step 2: 本実行
+      addMsg('u',`「${file.name}」を解析中...${needsConfirm?'（約'+est.estimated_minutes+'分）':''}`);
+      document.getElementById('upload-prog-wrap').style.display='block';
+      statusEl.style.display='block';
+      let pct2=15;
+      const progTimer2=setInterval(()=>{ pct2=Math.min(pct2+0.3,90); progEl.style.width=pct2+'%'; },3000);
+      let msgIdx2=0;
+      statusEl.textContent=statusMsgs[0];
+      const statusTimer2=setInterval(()=>{ msgIdx2=Math.min(msgIdx2+1,statusMsgs.length-1); statusEl.textContent=statusMsgs[msgIdx2]; },90000);
 
       const result=await apiPost('analyzeRegulation',{
         tenant_id: st.tenantId,
@@ -329,15 +386,27 @@ function showUploadForm(){
         analysis_db_id: ANALYSIS_DB_ID,
       });
 
-      clearInterval(progTimer); clearInterval(statusTimer); progEl.style.width='100%';
+      clearInterval(progTimer2); clearInterval(statusTimer2);
+      progEl.style.width='100%';
       statusEl.style.display='none';
 
       const s=result.summary||'';
       const regName=result.regulation_name||file.name;
       st.uploadedRegs.push({regulation_name:regName,regulation_type:'規程'});
 
+      // 失敗通知
+      let failureHtml='';
+      if(result.failed_categories && result.failed_categories.length>0){
+        const failedNames=result.failed_categories.map(f=>`<li>${f.category}（${f.criteria_count}件: ${f.reason}）</li>`).join('');
+        failureHtml=`<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:8px 12px;margin-top:8px;font-size:11px;color:#991b1b">
+          <strong>⚠ 一部の評価が完了していません</strong><br>
+          <ul style="margin:4px 0 0 16px;padding:0">${failedNames}</ul>
+          <div style="margin-top:4px">規程を分割して再アップロードすると改善する場合があります。</div>
+        </div>`;
+      }
+
       const chips = s ? `<span class="result-chip chip-ok">解析完了</span>` : '';
-      addMsg('ai',`<div class="banner">「<strong>${regName}</strong>」の解析が完了しました。${chips}<br><span style="font-size:11px;color:var(--text2)">${s}</span></div>`);
+      addMsg('ai',`<div class="banner">「<strong>${regName}</strong>」の解析が完了しました。${chips}<br><span style="font-size:11px;color:var(--text2)">${s}</span>${failureHtml}</div>`);
 
       // フォームをリセットして続けてアップロードできるように
       document.getElementById('reg-file').value='';
