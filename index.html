@@ -170,14 +170,25 @@ function delay(ms){ return new Promise(r=>setTimeout(r,ms)); }
 async function aiMsg(html,ms=450){ showTyping(); await delay(ms); hideTyping(); addMsg('ai',html); }
 
 // ─── API呼び出し ───────────────────────────────────────
-async function apiPost(endpoint, body){
-  const res = await fetch(CF+'/'+endpoint, {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body:JSON.stringify(body)
-  });
-  const data = await res.json();
-  if(!data.ok) throw new Error(data.error||'エラーが発生しました');
-  return data;
+async function apiPost(endpoint, body, timeoutMs){
+  const timeout = timeoutMs || 120000; // デフォルト2分
+  const controller = new AbortController();
+  const timer = setTimeout(()=>controller.abort(), timeout);
+  try{
+    const res = await fetch(CF+'/'+endpoint, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(body),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    const data = await res.json();
+    if(!data.ok) throw new Error(data.error||'エラーが発生しました');
+    return data;
+  }catch(e){
+    clearTimeout(timer);
+    if(e.name==='AbortError') throw new Error('処理がタイムアウトしました。時間をおいて再度お試しください。');
+    throw e;
+  }
 }
 
 function fileToBase64(file){
@@ -384,7 +395,7 @@ function showUploadForm(){
         file_base64: base64,
         mime_type: mimeType,
         analysis_db_id: ANALYSIS_DB_ID,
-      });
+      }, 1200000); // 20分タイムアウト
 
       clearInterval(progTimer2); clearInterval(statusTimer2);
       progEl.style.width='100%';
