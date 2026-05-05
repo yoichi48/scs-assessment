@@ -3,207 +3,461 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SCS★3 ギャップアセスメントレポート出力</title>
+<title>SCS★3 ギャップアセスメント</title>
 <style>
-:root {
-  --bg: #f7f8fa; --card: #fff; --primary: #2563eb; --primary-hover: #1d4ed8;
-  --text1: #1e293b; --text2: #64748b; --border: #e2e8f0;
-  --success: #16a34a; --error: #dc2626; --warn: #f59e0b;
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#ffffff;--bg2:#f7f7f5;--bg3:#f0ede8;
+  --border:rgba(0,0,0,0.12);--border2:rgba(0,0,0,0.22);
+  --text:#1a1a18;--text2:#6b6b67;--text3:#9b9b97;
+  --info-bg:#edf4ff;--info-bd:rgba(37,99,235,0.3);--info-tx:#1d4ed8;
+  --ok-bg:#edfdf4;--ok-bd:rgba(22,163,74,0.3);--ok-tx:#166534;
+  --warn-bg:#fffbeb;--warn-bd:rgba(217,119,6,0.3);--warn-tx:#92400e;
+  --err-bd:rgba(220,38,38,0.4);--err-tx:#991b1b;
+  --r:10px;--rs:6px;
 }
-* { margin:0; padding:0; box-sizing:border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", sans-serif;
-  background: var(--bg); color: var(--text1); min-height:100vh; display:flex; justify-content:center; align-items:center; }
-
-.container { width:100%; max-width:480px; padding:24px; }
-
-.card { background: var(--card); border-radius:16px; padding:32px 28px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04); }
-
-.logo { text-align:center; margin-bottom:24px; }
-.logo h1 { font-size:20px; color: var(--primary); margin-bottom:4px; }
-.logo p { font-size:13px; color: var(--text2); }
-
-.form-group { margin-bottom:16px; }
-.form-group label { display:block; font-size:13px; font-weight:600; color: var(--text2); margin-bottom:6px; }
-.form-group input { width:100%; padding:10px 14px; border:1px solid var(--border); border-radius:8px;
-  font-size:15px; outline:none; transition: border-color 0.2s; }
-.form-group input:focus { border-color: var(--primary); }
-
-.btn { width:100%; padding:12px; border:none; border-radius:10px; font-size:15px; font-weight:600;
-  cursor:pointer; transition: all 0.2s; margin-top:8px; }
-.btn-primary { background: var(--primary); color:#fff; }
-.btn-primary:hover { background: var(--primary-hover); }
-.btn-primary:disabled { background: #94a3b8; cursor:not-allowed; }
-
-.msg { margin-top:16px; padding:12px 16px; border-radius:10px; font-size:14px; line-height:1.6; display:none; }
-.msg-info { background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; }
-.msg-error { background:#fef2f2; color: var(--error); border:1px solid #fecaca; }
-.msg-success { background:#f0fdf4; color: var(--success); border:1px solid #bbf7d0; }
-
-.progress { margin-top:16px; display:none; }
-.progress-bar { height:6px; background: var(--border); border-radius:3px; overflow:hidden; }
-.progress-fill { height:100%; background: var(--primary); border-radius:3px; width:0%; transition: width 0.3s; }
-.progress-text { font-size:12px; color: var(--text2); margin-top:6px; text-align:center; }
-
-.result { margin-top:20px; display:none; }
-.result a { display:block; padding:14px; background: var(--success); color:#fff; text-align:center;
-  border-radius:10px; text-decoration:none; font-weight:600; font-size:15px; transition: background 0.2s; }
-.result a:hover { background: #15803d; }
-.result .filename { font-size:12px; color: var(--text2); text-align:center; margin-top:8px; }
-
-.footer { text-align:center; margin-top:20px; font-size:12px; color: var(--text2); }
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1c1c1a;--bg2:#252522;--bg3:#2e2e2b;
+  --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.2);
+  --text:#e8e8e4;--text2:#9b9b97;--text3:#6b6b67;
+  --info-bg:#0f1f3d;--info-bd:rgba(96,165,250,0.3);--info-tx:#93c5fd;
+  --ok-bg:#052e16;--ok-bd:rgba(74,222,128,0.3);--ok-tx:#86efac;
+  --warn-bg:#1c1200;--warn-bd:rgba(251,191,36,0.3);--warn-tx:#fcd34d;
+  --err-bd:rgba(252,165,165,0.4);--err-tx:#fca5a5;
+}}
+body{font-family:-apple-system,'Hiragino Sans','Yu Gothic UI',sans-serif;background:var(--bg3);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;color:var(--text)}
+#app{width:100%;max-width:600px;background:var(--bg);border-radius:var(--r);border:0.5px solid var(--border);display:flex;flex-direction:column;height:90vh;max-height:740px;overflow:hidden;box-shadow:0 2px 20px rgba(0,0,0,0.08)}
+.hdr{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:0.5px solid var(--border);background:var(--bg2);flex-shrink:0}
+.hdr-icon{width:30px;height:30px;border-radius:7px;background:var(--info-bg);border:0.5px solid var(--info-bd);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--info-tx)}
+.hdr-title{font-size:13px;font-weight:500}
+.hdr-sub{font-size:11px;color:var(--text2);margin-left:auto}
+.prog{height:2px;background:var(--border);flex-shrink:0}
+.prog-fill{height:100%;background:var(--info-tx);transition:width .4s}
+.chat{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.chat::-webkit-scrollbar{width:4px}
+.chat::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.msg{display:flex;gap:8px;animation:fi .2s ease}
+.msg.u{flex-direction:row-reverse}
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.av{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
+.av.ai{background:var(--info-bg);color:var(--info-tx);border:0.5px solid var(--info-bd)}
+.av.u{background:var(--bg2);color:var(--text2);border:0.5px solid var(--border)}
+.bbl{max-width:calc(100% - 60px);padding:9px 12px;border-radius:var(--r);font-size:13px;line-height:1.7}
+.msg.ai .bbl{background:var(--bg2);border:0.5px solid var(--border);border-top-left-radius:3px}
+.msg.u .bbl{background:var(--info-bg);border:0.5px solid var(--info-bd);border-top-right-radius:3px}
+.hint{font-size:11px;color:var(--warn-tx);margin-top:6px;padding:4px 8px;background:var(--warn-bg);border-radius:4px;border-left:2px solid var(--warn-bd)}
+.choices{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+.c-btn{background:var(--bg);border:0.5px solid var(--border2);color:var(--text);padding:8px 12px;border-radius:var(--rs);cursor:pointer;font-size:12px;font-family:inherit;text-align:left;transition:all .12s;display:flex;align-items:center;gap:7px}
+.c-btn:hover:not(:disabled){border-color:var(--info-tx);background:var(--info-bg)}
+.c-btn.sel{border-color:var(--ok-tx);background:var(--ok-bg)}
+.c-btn.ask{border-style:dashed;color:var(--text2)}
+.c-btn.ask:hover:not(:disabled){border-color:var(--border2);background:var(--bg2);color:var(--text)}
+.c-btn:disabled{opacity:.5;cursor:default}
+.num{width:18px;height:18px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;font-family:monospace}
+.multi-wrap{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+.m-btn{background:var(--bg);border:0.5px solid var(--border2);color:var(--text);padding:8px 12px;border-radius:var(--rs);cursor:pointer;font-size:12px;font-family:inherit;text-align:left;transition:all .12s;display:flex;align-items:center;gap:7px}
+.m-btn:hover:not(:disabled){border-color:var(--info-tx)}
+.m-btn.sel{border-color:var(--ok-tx);background:var(--ok-bg)}
+.m-btn:disabled{opacity:.5;cursor:default}
+.chk{width:14px;height:14px;border:0.5px solid var(--border2);border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px}
+.m-btn.sel .chk{background:var(--ok-bg);border-color:var(--ok-tx);color:var(--ok-tx)}
+.conf-btn{margin-top:7px;background:var(--info-bg);border:0.5px solid var(--info-bd);color:var(--info-tx);padding:6px 14px;border-radius:var(--rs);cursor:pointer;font-size:12px;font-family:inherit}
+.conf-btn:disabled{opacity:.5;cursor:default}
+.ti-wrap{display:flex;gap:6px;margin-top:7px}
+.ti{flex:1;background:var(--bg);border:0.5px solid var(--border2);color:var(--text);padding:8px 12px;border-radius:var(--rs);font-size:13px;font-family:inherit;outline:none}
+.ti:focus{border-color:var(--info-tx)}
+.ti-btn{background:var(--info-bg);border:0.5px solid var(--info-bd);color:var(--info-tx);padding:8px 14px;border-radius:var(--rs);cursor:pointer;font-size:12px;font-family:inherit;white-space:nowrap}
+.ti-btn:disabled{opacity:.5;cursor:default}
+.ask-area{margin-top:7px;background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--rs);padding:9px 11px}
+.ask-lbl{font-size:11px;color:var(--text2);margin-bottom:5px}
+.typing{display:flex;gap:3px;padding:4px 0}
+.typing span{width:5px;height:5px;border-radius:50%;background:var(--text3);animation:bounce 1.2s infinite}
+.typing span:nth-child(2){animation-delay:.2s}
+.typing span:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+.banner{background:var(--ok-bg);border:0.5px solid var(--ok-bd);border-radius:var(--rs);padding:9px 12px;font-size:12px;margin-top:8px;line-height:1.6}
+.claude-ans{background:var(--bg);border:0.5px solid var(--info-bd);border-radius:var(--rs);padding:9px 11px;margin-top:7px;font-size:12px;line-height:1.75}
+.sum-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--rs);padding:11px;margin-top:8px}
+.sum-card h4{font-size:11px;color:var(--text2);font-weight:400;margin-bottom:8px}
+.sum-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:0.5px solid var(--border);font-size:11px}
+.sum-row:last-child{border-bottom:none}
+.sub-btn{background:var(--ok-bg);border:0.5px solid var(--ok-bd);color:var(--ok-tx);padding:11px;border-radius:var(--rs);cursor:pointer;font-size:14px;font-family:inherit;font-weight:500;margin-top:10px;width:100%;transition:opacity .12s}
+.sub-btn:hover:not(:disabled){opacity:.85}
+.sub-btn:disabled{opacity:.5;cursor:default}
+.qno{font-size:10px;color:var(--text3);margin-bottom:4px}
+/* 規程アップロード専用 */
+.upload-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--r);padding:14px;margin-top:8px}
+.upload-card h4{font-size:12px;font-weight:500;margin-bottom:10px}
+.sel-wrap{display:flex;flex-direction:column;gap:8px}
+.sel{width:100%;background:var(--bg);border:0.5px solid var(--border2);color:var(--text);padding:8px 10px;border-radius:var(--rs);font-size:12px;font-family:inherit;outline:none}
+.sel:focus{border-color:var(--info-tx)}
+.file-label{display:flex;align-items:center;gap:8px;padding:8px 12px;border:0.5px dashed var(--border2);border-radius:var(--rs);cursor:pointer;font-size:12px;color:var(--text2);transition:all .12s}
+.file-label:hover{border-color:var(--info-tx);color:var(--info-tx)}
+.file-label input{display:none}
+.file-name{font-size:11px;color:var(--ok-tx);margin-top:4px;word-break:break-all}
+.upload-btn{background:var(--info-bg);border:0.5px solid var(--info-bd);color:var(--info-tx);padding:8px 16px;border-radius:var(--rs);cursor:pointer;font-size:12px;font-family:inherit;width:100%;margin-top:4px;transition:opacity .12s}
+.upload-btn:hover:not(:disabled){opacity:.85}
+.upload-btn:disabled{opacity:.5;cursor:default}
+.skip-btn{background:none;border:none;color:var(--text3);font-size:11px;font-family:inherit;cursor:pointer;padding:4px 0;text-decoration:underline}
+.skip-btn:hover{color:var(--text2)}
+.prog-bar{height:4px;background:var(--border);border-radius:2px;margin-top:8px;overflow:hidden}
+.prog-bar-fill{height:100%;background:var(--info-tx);border-radius:2px;transition:width .3s}
+.result-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:20px;margin:2px}
+.chip-ok{background:var(--ok-bg);color:var(--ok-tx);border:0.5px solid var(--ok-bd)}
+.chip-warn{background:var(--warn-bg);color:var(--warn-tx);border:0.5px solid var(--warn-bd)}
 </style>
 </head>
 <body>
-<div class="container">
-  <div class="card">
-    <div class="logo">
-      <h1>📊 SCS★3 ギャップアセスメント</h1>
-      <p>レポート出力</p>
-    </div>
-
-    <div id="auth-form">
-      <div class="form-group">
-        <label for="tenant-id">会員番号（テナントID）</label>
-        <input type="text" id="tenant-id" placeholder="例: 800801" autocomplete="off">
-      </div>
-      <div class="form-group">
-        <label for="email">メールアドレス</label>
-        <input type="email" id="email" placeholder="登録メールアドレス" autocomplete="email">
-      </div>
-      <button class="btn btn-primary" id="generate-btn" onclick="generateReport()">
-        レポートを生成する
-      </button>
-    </div>
-
-    <div class="msg" id="msg"></div>
-
-    <div class="progress" id="progress">
-      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
-      <div class="progress-text" id="progress-text">データを取得中...</div>
-    </div>
-
-    <div class="result" id="result">
-      <a id="download-link" href="#" target="_blank">📥 レポートをダウンロード</a>
-      <div class="filename" id="download-filename"></div>
-    </div>
+<div id="app">
+  <div class="hdr">
+    <div class="hdr-icon">S</div>
+    <div class="hdr-title">SCS★3 ギャップアセスメント</div>
+    <div class="hdr-sub" id="hdr-sub">認証中...</div>
   </div>
-
-  <div class="footer">
-    SCS★3 取得支援コンサルティングサービス
-  </div>
+  <div class="prog"><div class="prog-fill" id="prog" style="width:0%"></div></div>
+  <div class="chat" id="chat"></div>
 </div>
 
 <script>
 const CF = 'https://asia-northeast1-scs-star3-service.cloudfunctions.net';
+const ANALYSIS_DB_ID = '350efdde-5e8a-8044-aa52-e227d6bf0437';
 
-function showMsg(type, text) {
-  const el = document.getElementById('msg');
-  el.className = `msg msg-${type}`;
-  el.textContent = text;
-  el.style.display = 'block';
+const Qs = [
+  { id:'B3_1', text:'情報セキュリティに関する社内ルールはどの程度整備されていますか？', hint:'💡 参照規程: POL-001 / GOV-001', type:'single',
+    choices:['文書化・定期見直し・全員周知済み','文書化・周知のみ','口頭ルールのみ','なし'] },
+  { id:'B3_2', text:'情報セキュリティ対応方針の策定・周知状況はいかがですか？', hint:'💡 参照規程: POL-001 情報セキュリティ対応方針', type:'single',
+    choices:['制定・全員周知・参照可能','制定のみ','なし'] },
+  { id:'B3_4', text:'経営層によるセキュリティへの関与はどの程度ありますか？', hint:'💡 参照規程: GOV-001 推進体制規程', type:'single',
+    choices:['仕組みあり・定期実施','必要時のみ','なし'] },
+  { id:'cloud', text:'現在利用中のクラウドサービスを選択してください（複数選択可）', hint:'💡 参照規程: ISM-001 情報資産管理規程', type:'multi',
+    choices:['Microsoft 365 / Teams','Google Workspace','AWS / Azure / GCP','Salesforce / kintone等','利用していない'] },
+  { id:'B3_17', text:'ID（アカウント）の申請・承認プロセスはどのように管理されていますか？', hint:'💡 参照規程: ACC-001 アクセス権管理規程', type:'single',
+    choices:['申請・承認プロセスあり・記録保管','管理者判断で付与','プロセスなし'] },
+  { id:'B3_21', text:'多要素認証（MFA）を導入しているシステムを選択してください（複数選択可）', hint:'💡 参照規程: ACC-001 アクセス権管理規程', type:'multi',
+    choices:['VPN・リモートアクセス','社内基幹システム','クラウドサービス（M365等）','導入していない'] },
+  { id:'B3_28', text:'従業員向けセキュリティ教育・訓練はどの程度実施していますか？', hint:'💡 参照規程: EDU-001 セキュリティ教育規程', type:'single',
+    choices:['年1回以上・全員・記録あり','不定期実施','未実施'] },
+  { id:'B3_36', text:'インシデント対応手順の整備状況はいかがですか？', hint:'💡 参照規程: INC-001 インシデント対応規程', type:'single',
+    choices:['手順書あり・訓練実施・記録','手順書のみ','未整備'] },
+];
+
+const st = { phase:'auth', tenantId:null, company:null, answers:{}, q:0, multi:[], uploadedRegs:[] };
+const chat = document.getElementById('chat');
+const prog = document.getElementById('prog');
+const hdrSub = document.getElementById('hdr-sub');
+
+const PHASES = ['auth','upload','questions','summary','done'];
+function setProg(){
+  const idx = PHASES.indexOf(st.phase);
+  const total = Qs.length + 3;
+  const done = st.phase==='done'?total : st.phase==='summary'?Qs.length+2 : st.phase==='questions'?st.q+2 : st.phase==='upload'?1 : 0;
+  prog.style.width=(done/total*100)+'%';
+  const label = st.company ? st.company.company_name : '';
+  const qLabel = st.phase==='questions' ? ` | Q${Math.min(st.q+1,Qs.length)}/${Qs.length}` : '';
+  hdrSub.textContent = label ? label+qLabel : '認証中...';
+}
+function scroll(){ setTimeout(()=>chat.scrollTop=chat.scrollHeight,40); }
+function addMsg(type,html){
+  const d=document.createElement('div');
+  d.className='msg '+type;
+  d.innerHTML='<div class="av '+type+'">'+(type==='ai'?'S':'担')+'</div><div class="bbl">'+html+'</div>';
+  chat.appendChild(d); scroll(); return d;
+}
+let typEl=null;
+function showTyping(){ typEl=addMsg('ai','<div class="typing"><span></span><span></span><span></span></div>'); }
+function hideTyping(){ if(typEl){typEl.remove();typEl=null;} }
+function delay(ms){ return new Promise(r=>setTimeout(r,ms)); }
+async function aiMsg(html,ms=450){ showTyping(); await delay(ms); hideTyping(); addMsg('ai',html); }
+
+// ─── API呼び出し ───────────────────────────────────────
+async function apiPost(endpoint, body){
+  const res = await fetch(CF+'/'+endpoint, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(body)
+  });
+  const data = await res.json();
+  if(!data.ok) throw new Error(data.error||'エラーが発生しました');
+  return data;
 }
 
-function hideMsg() {
-  document.getElementById('msg').style.display = 'none';
+function fileToBase64(file){
+  return new Promise((resolve,reject)=>{
+    const r=new FileReader();
+    r.onload=()=>resolve(r.result.split(',')[1]);
+    r.onerror=reject;
+    r.readAsDataURL(file);
+  });
 }
 
-function showProgress(text) {
-  document.getElementById('progress').style.display = 'block';
-  document.getElementById('progress-text').textContent = text;
-}
-
-function setProgress(pct, text) {
-  document.getElementById('progress-fill').style.width = pct + '%';
-  if (text) document.getElementById('progress-text').textContent = text;
-}
-
-function hideProgress() {
-  document.getElementById('progress').style.display = 'none';
-}
-
-async function generateReport() {
-  const tenantId = document.getElementById('tenant-id').value.trim();
-  const email = document.getElementById('email').value.trim();
-
-  if (!tenantId || !email) {
-    showMsg('error', '会員番号とメールアドレスを入力してください。');
-    return;
-  }
-
-  hideMsg();
-  document.getElementById('result').style.display = 'none';
-  document.getElementById('generate-btn').disabled = true;
-
-  // プログレス表示
-  showProgress('認証中...');
-  let pct = 0;
-  const progressSteps = [
-    { at: 10, text: '認証中...' },
-    { at: 25, text: 'チェックリストを取得中...' },
-    { at: 45, text: 'タスク一覧を取得中...' },
-    { at: 60, text: '総評を生成中（AI分析）...' },
-    { at: 80, text: 'PDFを生成中...' },
-    { at: 90, text: 'ファイルを保存中...' },
-  ];
-  const timer = setInterval(() => {
-    if (pct < 90) {
-      pct += 2;
-      const step = progressSteps.filter(s => s.at <= pct).pop();
-      setProgress(pct, step ? step.text : '処理中...');
+// ─── フェーズ: 認証 ────────────────────────────────────
+async function startAuth(){
+  await aiMsg('こんにちは。SCS★3ギャップアセスメントを始めます。<br>会員番号とメールアドレスを入力してください。',500);
+  const d=document.createElement('div');
+  d.className='msg ai';
+  d.innerHTML=`<div class="av ai">S</div><div class="bbl">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <input class="ti" id="tid" placeholder="会員番号（例: 800801）" maxlength="10">
+      <input class="ti" id="eid" placeholder="メールアドレス" type="email">
+      <button class="ti-btn" id="auth-btn" style="align-self:flex-start">確認する →</button>
+    </div>
+  </div>`;
+  chat.appendChild(d); scroll();
+  document.getElementById('tid').focus();
+  const doAuth=async()=>{
+    const tid=document.getElementById('tid').value.trim();
+    const email=document.getElementById('eid').value.trim();
+    if(!tid||!email) return;
+    ['tid','eid','auth-btn'].forEach(id=>document.getElementById(id).disabled=true);
+    addMsg('u',tid+' / '+email);
+    showTyping();
+    try{
+      const data=await apiPost('getTenantInfo',{tenant_id:tid,email});
+      hideTyping();
+      st.tenantId=tid; st.company=data.company;
+      st.uploadedRegs=data.analyzed_regulations||[];
+      st.phase='upload'; setProg();
+      startUpload();
+    }catch(e){
+      hideTyping(); addMsg('ai','⚠ '+e.message);
+      ['tid','eid','auth-btn'].forEach(id=>document.getElementById(id).disabled=false);
     }
-  }, 500);
+  };
+  document.getElementById('auth-btn').addEventListener('click',doAuth);
+  document.getElementById('eid').addEventListener('keydown',e=>{if(e.key==='Enter')doAuth();});
+}
 
-  try {
-    const resp = await fetch(`${CF}/generateReport`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tenant_id: tenantId, email }),
+// ─── フェーズ: 規程アップロード ───────────────────────
+async function startUpload(){
+  const c=st.company;
+  const regsHtml = st.uploadedRegs.length>0
+    ? '解析済み規程: <strong>'+st.uploadedRegs.map(r=>r.regulation_name).join('、')+'</strong><br>'
+    : '';
+  await aiMsg(`<div class="banner"><strong>${c.company_name}</strong>（${c.employee_range||''}）CISO: ${c.ciso_name||'未設定'}<br>${regsHtml}</div>`,700);
+  await delay(200);
+  await aiMsg(`お持ちの規程があれば先にアップロードできます。<br>ヒアリング結果と合わせてより精度の高い分析ができます。<br><br>
+<div class="choices">
+  <button class="c-btn" id="upload-open-btn"><span class="num">📄</span>規程をアップロードする</button>
+  <button class="c-btn ask" id="skip-upload-btn"><span class="num">→</span>スキップしてヒアリングへ進む</button>
+</div>`,600);
+
+  document.getElementById('skip-upload-btn').addEventListener('click',()=>{
+    addMsg('u','スキップしてヒアリングへ');
+    st.phase='questions'; st.q=0; setProg(); setTimeout(askQ,350);
+  });
+
+  document.getElementById('upload-open-btn').addEventListener('click',()=>{
+    document.getElementById('upload-open-btn').disabled=true;
+    document.getElementById('skip-upload-btn').disabled=true;
+    showUploadForm();
+  });
+}
+
+function showUploadForm(){
+  const d=document.createElement('div');
+  d.className='msg ai';
+  d.innerHTML=`<div class="av ai">S</div><div class="bbl">
+    <div class="upload-card">
+      <h4>規程ファイルのアップロード</h4>
+      <div class="sel-wrap">
+        <label class="file-label" id="file-label">
+          <span>📎</span><span id="file-label-text">ファイルを選択（PDF / docx）</span>
+          <input type="file" id="reg-file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+        </label>
+        <div class="file-name" id="file-name-disp"></div>
+        <div class="prog-bar" id="upload-prog-wrap" style="display:none"><div class="prog-bar-fill" id="upload-prog" style="width:0%"></div></div>
+        <button class="upload-btn" id="do-upload-btn" disabled>解析を開始する</button>
+        <button class="skip-btn" id="done-upload-btn">アップロードを終えてヒアリングへ進む →</button>
+      </div>
+    </div>
+  </div>`;
+  chat.appendChild(d); scroll();
+
+  document.getElementById('reg-file').addEventListener('change',e=>{
+    const f=e.target.files[0];
+    if(!f) return;
+    document.getElementById('file-name-disp').textContent=f.name;
+    document.getElementById('do-upload-btn').disabled=false;
+  });
+
+  document.getElementById('do-upload-btn').addEventListener('click',async()=>{
+    const file=document.getElementById('reg-file').files[0];
+    if(!file) return;
+
+    document.getElementById('do-upload-btn').disabled=true;
+    document.getElementById('done-upload-btn').disabled=true;
+    document.getElementById('upload-prog-wrap').style.display='block';
+
+    // プログレスアニメーション
+    let pct=0;
+    const progEl=document.getElementById('upload-prog');
+    const progTimer=setInterval(()=>{ pct=Math.min(pct+3,85); progEl.style.width=pct+'%'; },300);
+
+    try{
+      const base64=await fileToBase64(file);
+      const mimeType=file.name.endsWith('.pdf')?'application/pdf':'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      addMsg('u',`「${file.name}」をアップロード中...`);
+
+      const result=await apiPost('analyzeRegulation',{
+        tenant_id: st.tenantId,
+        regulation_type: 'その他',
+        file_name: file.name,
+        file_base64: base64,
+        mime_type: mimeType,
+        analysis_db_id: ANALYSIS_DB_ID,
+      });
+
+      clearInterval(progTimer); progEl.style.width='100%';
+
+      const s=result.summary||'';
+      const regName=result.regulation_name||file.name;
+      st.uploadedRegs.push({regulation_name:regName,regulation_type:'規程'});
+
+      const chips = s ? `<span class="result-chip chip-ok">解析完了</span>` : '';
+      addMsg('ai',`<div class="banner">「<strong>${regName}</strong>」の解析が完了しました。${chips}<br><span style="font-size:11px;color:var(--text2)">${s}</span></div>`);
+
+      // フォームをリセットして続けてアップロードできるように
+      document.getElementById('reg-file').value='';
+      document.getElementById('file-name-disp').textContent='';
+      document.getElementById('upload-prog-wrap').style.display='none';
+      progEl.style.width='0%';
+      document.getElementById('do-upload-btn').disabled=true;
+      document.getElementById('done-upload-btn').disabled=false;
+
+      addMsg('ai','続けて別の規程をアップロードするか、ヒアリングへ進んでください。');
+
+    }catch(e){
+      clearInterval(progTimer);
+      addMsg('ai',`⚠ アップロードに失敗しました: ${e.message}`);
+      document.getElementById('do-upload-btn').disabled=false;
+      document.getElementById('done-upload-btn').disabled=false;
+    }
+  });
+
+  document.getElementById('done-upload-btn').addEventListener('click',()=>{
+    const uploaded=st.uploadedRegs.length>0
+      ? `${st.uploadedRegs.length}件の規程を解析しました。`
+      : '';
+    addMsg('u','ヒアリングへ進む');
+    if(uploaded) addMsg('ai',uploaded+'それでは設問に答えていただきます。');
+    st.phase='questions'; st.q=0; setProg(); setTimeout(askQ,500);
+  });
+}
+
+// ─── フェーズ: ヒアリング ──────────────────────────────
+async function askQ(){
+  if(st.q>=Qs.length){ showSummary(); return; }
+  const q=Qs[st.q]; setProg();
+  if(q.type==='single'){
+    const ch=q.choices.map((c,i)=>`<button class="c-btn" data-v="${c}"><span class="num">${i+1}</span>${c}</button>`).join('')
+      +`<button class="c-btn ask" id="ask-btn-${q.id}"><span class="num">?</span>わからない・質問する</button>`;
+    await aiMsg(`<div class="qno">Q${st.q+1}/${Qs.length}</div>${q.text}<div class="hint">${q.hint}</div><div class="choices" id="c-${q.id}">${ch}</div>`,450);
+    bindSingle(q); bindAsk(q);
+  }else{
+    st.multi=[];
+    const ch=q.choices.map(c=>`<button class="m-btn" data-v="${c}"><span class="chk"></span>${c}</button>`).join('');
+    await aiMsg(`<div class="qno">Q${st.q+1}/${Qs.length}（複数選択可）</div>${q.text}<div class="hint">${q.hint}</div>`+
+      `<div class="multi-wrap" id="m-${q.id}">${ch}</div>`+
+      `<div style="display:flex;gap:6px;margin-top:7px"><button class="conf-btn" id="conf-${q.id}">選択を確定する →</button>`+
+      `<button class="c-btn ask" id="ask-btn-${q.id}" style="margin:0;font-size:11px"><span class="num">?</span>質問する</button></div>`,450);
+    bindMulti(q); bindAsk(q);
+  }
+}
+
+function bindSingle(q){
+  document.querySelectorAll(`#c-${q.id} .c-btn:not(.ask)`).forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll(`#c-${q.id} .c-btn`).forEach(b=>{b.disabled=true;b.classList.toggle('sel',b===btn);});
+      st.answers[q.id]=btn.dataset.v; addMsg('u',btn.dataset.v); st.q++; setTimeout(askQ,300);
     });
-
-    clearInterval(timer);
-
-    const data = await resp.json();
-
-    if (!resp.ok || !data.ok) {
-      const errMsg = data.error || 'レポート生成に失敗しました。';
-      if (resp.status === 401) {
-        showMsg('error', '会員番号またはメールアドレスが正しくありません。');
-      } else if (resp.status === 403) {
-        showMsg('warn', errMsg);
-      } else {
-        showMsg('error', errMsg);
+  });
+}
+function bindMulti(q){
+  document.querySelectorAll(`#m-${q.id} .m-btn`).forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const v=btn.dataset.v;
+      if(st.multi.includes(v)){st.multi=st.multi.filter(x=>x!==v);btn.classList.remove('sel');btn.querySelector('.chk').textContent='';}
+      else{st.multi.push(v);btn.classList.add('sel');btn.querySelector('.chk').textContent='✓';}
+    });
+  });
+  document.getElementById(`conf-${q.id}`).addEventListener('click',()=>{
+    if(!st.multi.length)st.multi=['選択なし'];
+    document.querySelectorAll(`#m-${q.id} .m-btn`).forEach(b=>b.disabled=true);
+    document.getElementById(`conf-${q.id}`).disabled=true;
+    document.getElementById(`ask-btn-${q.id}`).disabled=true;
+    st.answers[q.id]=[...st.multi]; addMsg('u',st.multi.join('、')); st.q++; setTimeout(askQ,300);
+  });
+}
+function bindAsk(q){
+  const btn=document.getElementById(`ask-btn-${q.id}`);
+  if(!btn)return;
+  btn.addEventListener('click',()=>{
+    btn.disabled=true;
+    const area=document.createElement('div');
+    area.className='ask-area';
+    area.innerHTML=`<div class="ask-lbl">質問を入力してください（Claude が回答します）</div>`+
+      `<div class="ti-wrap"><input class="ti" id="ai-${q.id}" placeholder="例: 整備状況がよくわかりません" style="font-size:12px">`+
+      `<button class="ti-btn" id="as-${q.id}">送信</button></div>`+
+      `<div id="aa-${q.id}"></div>`;
+    btn.closest('.bbl').appendChild(area); scroll();
+    document.getElementById(`ai-${q.id}`).focus();
+    const doAsk=async()=>{
+      const inp=document.getElementById(`ai-${q.id}`);
+      const sb=document.getElementById(`as-${q.id}`);
+      const txt=inp.value.trim(); if(!txt)return;
+      inp.disabled=true; sb.disabled=true;
+      addMsg('u',txt);
+      const aa=document.getElementById(`aa-${q.id}`);
+      aa.innerHTML='<div class="claude-ans"><div class="typing"><span></span><span></span><span></span></div></div>';
+      scroll();
+      try{
+        const data=await apiPost('askClaude',{question:txt,context:q.text,choices:q.choices});
+        aa.innerHTML=`<div class="claude-ans">${data.answer.replace(/\n/g,'<br>')}</div>`;
+        inp.value=''; inp.disabled=false; sb.disabled=false; inp.placeholder='続けて質問できます';
+        if(q.type==='single')document.querySelectorAll(`#c-${q.id} .c-btn:not(.ask)`).forEach(b=>b.disabled=false);
+        else{const cf=document.getElementById(`conf-${q.id}`);if(cf)cf.disabled=false;document.querySelectorAll(`#m-${q.id} .m-btn`).forEach(b=>b.disabled=false);}
+      }catch(e){
+        aa.innerHTML=`<div class="claude-ans" style="border-color:var(--err-bd);color:var(--err-tx)">⚠ ${e.message}</div>`;
+        inp.disabled=false; sb.disabled=false;
       }
-      hideProgress();
-      document.getElementById('generate-btn').disabled = false;
-      return;
-    }
-
-    // 成功
-    setProgress(100, '完了しました！');
-    setTimeout(() => hideProgress(), 1000);
-
-    document.getElementById('download-link').href = data.report_url;
-    document.getElementById('download-filename').textContent = data.file_name || '';
-    document.getElementById('result').style.display = 'block';
-
-    if (data.summary) {
-      showMsg('success', data.summary);
-    }
-
-  } catch (e) {
-    clearInterval(timer);
-    hideProgress();
-    showMsg('error', `通信エラー: ${e.message}`);
-  }
-
-  document.getElementById('generate-btn').disabled = false;
+      scroll();
+    };
+    document.getElementById(`as-${q.id}`).addEventListener('click',doAsk);
+    document.getElementById(`ai-${q.id}`).addEventListener('keydown',e=>{if(e.key==='Enter')doAsk();});
+  },{once:true});
 }
 
-// Enterキーで実行
-document.addEventListener('keydown', e => {
-  if (e.key === 'Enter') generateReport();
-});
+// ─── フェーズ: サマリー ───────────────────────────────
+async function showSummary(){
+  st.phase='summary'; setProg();
+  const regsText = st.uploadedRegs.length>0
+    ? `<div style="margin-bottom:8px;font-size:11px;color:var(--text2)">解析済み規程: ${st.uploadedRegs.map(r=>r.regulation_name).join('、')}</div>`
+    : '';
+  const rows=Object.entries(st.answers).map(([id,val])=>{
+    const q=Qs.find(x=>x.id===id);
+    const v=Array.isArray(val)?val.join('、'):val;
+    return `<div class="sum-row"><span style="color:var(--text2)">${q?q.text.slice(0,16)+'…':id}</span><span style="font-weight:500;max-width:55%;text-align:right;font-size:11px">${v}</span></div>`;
+  }).join('');
+  await aiMsg(`回答が完了しました。ギャップ推定を実行してください。
+    <div class="sum-card">${regsText}<h4>ヒアリング回答（${Object.keys(st.answers).length}問）</h4>${rows}</div>
+    <button class="sub-btn" id="sub-btn">ギャップ推定を実行する</button>`,600);
+  document.getElementById('sub-btn').addEventListener('click',async()=>{
+    document.getElementById('sub-btn').disabled=true;
+    document.getElementById('sub-btn').textContent='送信中...';
+    addMsg('u','ギャップ推定を実行します');
+    try{
+      await apiPost('scsAssessment',{tenant_id:st.tenantId,answers:st.answers});
+    }catch(e){ console.warn('scsAssessment:', e.message); }
+    st.phase='done'; setProg();
+    addMsg('ai',`<div style="text-align:center;padding:10px 0">
+      <div style="font-size:28px;margin-bottom:8px">✅</div>
+      <div style="font-size:15px;font-weight:500;margin-bottom:6px">ギャップ推定が完了しました</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.75">Notionのチェックリストに結果を反映しました。<br>専門家が確認し、対策ロードマップをお届けします。</div>
+    </div>`);
+  });
+}
+
+startAuth();
+setProg();
 </script>
 </body>
 </html>
