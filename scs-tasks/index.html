@@ -286,10 +286,10 @@ async function registerTasks() {
     selectedTasks.push({
       name: t.name,
       group: t.group || 'その他',
+      priority: t.priority || '中',
+      description: t.description || '',
       related_criteria: t.related_criteria || [],
       assignee: '',
-      start_date: null,
-      end_date: null,
     });
   });
 
