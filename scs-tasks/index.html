@@ -217,7 +217,7 @@ function renderTaskList(tasks, gapCount) {
   const container = document.getElementById('task-items');
   container.innerHTML = '';
 
-  const groupOrder = ['体制整備', '規程整備', '技術対策', '運用改善', '教育・訓練', '未分類'];
+  const groupOrder = ['規程整備', '技術対策', '教育', '証憑収集', 'その他'];
   const sortedGroups = Object.keys(groups).sort((a, b) => {
     const ai = groupOrder.indexOf(a);
     const bi = groupOrder.indexOf(b);
@@ -285,7 +285,8 @@ async function registerTasks() {
     const t = proposedTasks[idx];
     selectedTasks.push({
       name: t.name,
-      group: t.group || '未分類',
+      group: t.group || 'その他',
+      related_criteria: t.related_criteria || [],
       assignee: '',
       start_date: null,
       end_date: null,
