@@ -395,7 +395,7 @@ function showUploadForm(){
         file_base64: base64,
         mime_type: mimeType,
         analysis_db_id: ANALYSIS_DB_ID,
-      }, 1200000); // 20分タイムアウト
+      }, 1800000); // 30分タイムアウト
 
       clearInterval(progTimer2); clearInterval(statusTimer2);
       progEl.style.width='100%';
