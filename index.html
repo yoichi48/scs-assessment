@@ -120,8 +120,6 @@ body{font-family:-apple-system,'Hiragino Sans','Yu Gothic UI',sans-serif;backgro
 
 <script>
 const CF = 'https://asia-northeast1-scs-star3-service.cloudfunctions.net';
-const ANALYSIS_DB_ID = '350efdde-5e8a-8044-aa52-e227d6bf0437';
-
 const Qs = [
   { id:'B3_1', text:'情報セキュリティに関する社内ルールはどの程度整備されていますか？', hint:'💡 参照規程: POL-001 / GOV-001', type:'single',
     choices:['文書化・定期見直し・全員周知済み','文書化・周知のみ','口頭ルールのみ','なし'] },
@@ -338,7 +336,6 @@ function showUploadForm(){
         file_name: file.name,
         file_base64: base64,
         mime_type: mimeType,
-        analysis_db_id: ANALYSIS_DB_ID,
         dry_run: true,
       });
 
@@ -394,7 +391,6 @@ function showUploadForm(){
         file_name: file.name,
         file_base64: base64,
         mime_type: mimeType,
-        analysis_db_id: ANALYSIS_DB_ID,
       }, 1800000); // 30分タイムアウト
 
       clearInterval(progTimer2); clearInterval(statusTimer2);
