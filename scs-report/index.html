@@ -124,9 +124,16 @@ function hideProgress() {
 
 async function generateReport() {
   const tenantId = document.getElementById('tenant-id').value.trim();
-  const email = document.getElementById('email').value.trim();
+  const email = document.getElementById('email') ? document.getElementById('email').value.trim() : '';
+  const tok = window._tok || '';
+  const exp = window._exp || '';
+  const authPayload = tok ? { tenant_id: tenantId, tok, exp } : { tenant_id: tenantId, email };
 
-  if (!tenantId || !email) {
+  if (!tenantId) {
+    showMsg('error', '会員番号を入力してください。');
+    return;
+  }
+  if (!tok && !email) {
     showMsg('error', '会員番号とメールアドレスを入力してください。');
     return;
   }
@@ -158,7 +165,7 @@ async function generateReport() {
     const resp = await fetch(`${CF}/generateReport`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tenant_id: tenantId, email }),
+      body: JSON.stringify(authPayload),
     });
 
     clearInterval(timer);
@@ -204,6 +211,23 @@ async function generateReport() {
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter') generateReport();
 });
+
+// URLパラメータからの自動入力
+(function(){
+  const params = new URLSearchParams(location.search);
+  const tid = params.get('t');
+  const tok = params.get('tok');
+  const exp = params.get('exp');
+  if (tid) document.getElementById('tenant-id').value = tid;
+  if (tok && exp) {
+    const emailEl = document.getElementById('email');
+    if (emailEl) {
+      const emailGroup = emailEl.closest('.form-group') || emailEl.parentElement;
+      if (emailGroup) emailGroup.style.display = 'none';
+    }
+    window._tok = tok; window._exp = exp;
+  }
+})();
 </script>
 </body>
 </html>
