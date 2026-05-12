@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCS★3 規程アップロード</title>
+<style>
+:root{
+  --bg:#f7f8fa;--card:#fff;--primary:#2B5C8A;--primary-hover:#1e4670;
+  --text1:#2D3436;--text2:#636E72;--border:#D5D8DC;
+  --success:#477D61;--error:#9B4D4D;--warn:#B08D3E;
+  --info-bg:#EBF3FB;--info-bd:#B3CDE8;--info-tx:#1B4F72;
+  --r:14px;--rs:8px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans",sans-serif;
+  background:var(--bg);color:var(--text1);min-height:100vh;display:flex;justify-content:center;padding:24px;}
+.container{width:100%;max-width:600px;}
+.logo{text-align:center;margin-bottom:24px;}
+.logo h1{font-size:20px;color:var(--primary);margin-bottom:4px;}
+.logo p{font-size:13px;color:var(--text2);}
+.card{background:var(--card);border-radius:var(--r);padding:24px;
+  box-shadow:0 1px 3px rgba(0,0,0,0.06),0 4px 12px rgba(0,0,0,0.04);margin-bottom:16px;}
+.card h2{font-size:15px;font-weight:600;margin-bottom:16px;color:var(--text1);}
+.form-group{margin-bottom:14px;}
+.form-group label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;}
+.form-group input{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--rs);
+  font-size:14px;outline:none;font-family:inherit;}
+.form-group input:focus{border-color:var(--primary);}
+.btn{padding:11px 20px;border:none;border-radius:var(--rs);font-size:14px;font-weight:600;
+  cursor:pointer;transition:all 0.2s;font-family:inherit;}
+.btn-primary{background:var(--primary);color:#fff;width:100%;}
+.btn-primary:hover:not(:disabled){background:var(--primary-hover);}
+.btn-primary:disabled{background:#94a3b8;cursor:not-allowed;}
+.btn-secondary{background:var(--info-bg);color:var(--info-tx);border:1px solid var(--info-bd);width:100%;margin-top:8px;}
+.btn-secondary:hover:not(:disabled){opacity:.85;}
+.btn-secondary:disabled{opacity:.5;cursor:not-allowed;}
+
+.banner{background:var(--info-bg);border:1px solid var(--info-bd);border-radius:var(--rs);
+  padding:12px 14px;font-size:13px;color:var(--info-tx);margin-bottom:16px;line-height:1.6;}
+.banner strong{color:var(--primary);}
+.warn-banner{background:#fffbeb;border:1px solid #fbbf24;border-radius:var(--rs);
+  padding:10px 14px;font-size:12px;color:#92400e;margin-bottom:14px;line-height:1.6;}
+.notice{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:var(--rs);
+  padding:10px 14px;font-size:12px;color:#166534;margin-top:12px;line-height:1.6;}
+
+.file-label{display:flex;align-items:center;gap:8px;padding:12px 14px;
+  border:1.5px dashed var(--border);border-radius:var(--rs);cursor:pointer;
+  background:#fafbfc;transition:border-color .15s;font-size:13px;color:var(--text2);}
+.file-label:hover{border-color:var(--primary);}
+.file-label input{display:none;}
+.file-name{font-size:12px;color:var(--text2);margin-top:6px;min-height:18px;}
+
+.prog-bar{background:#e5e7eb;border-radius:4px;overflow:hidden;height:6px;margin:10px 0;}
+.prog-bar-fill{background:var(--primary);height:100%;border-radius:4px;transition:width .3s;}
+.status-msg{font-size:11px;color:var(--text2);text-align:center;margin:4px 0;}
+
+.history{list-style:none;margin-top:8px;}
+.history li{display:flex;align-items:center;gap:8px;padding:8px 10px;
+  border:0.5px solid var(--border);border-radius:var(--rs);margin-bottom:6px;font-size:13px;background:#fafbfc;}
+.history li .chip{font-size:11px;background:#d1fae5;color:#065f46;border-radius:4px;padding:2px 6px;}
+.history li .chip-warn{background:#fef9c3;color:#854d0e;}
+
+.msg{padding:12px 16px;border-radius:var(--rs);font-size:13px;line-height:1.6;margin-top:10px;}
+.msg-error{background:#fef2f2;color:var(--error);border:1px solid #fecaca;}
+.msg-success{background:#f0fdf4;color:var(--success);border:1px solid #bbf7d0;}
+.msg-warn{background:#fffbeb;color:#92400e;border:1px solid #fbbf24;}
+
+#auth-section,#upload-section{display:none;}
+#auth-section.visible,#upload-section.visible{display:block;}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="logo">
+    <h1>📄 規程アップロード</h1>
+    <p>SCS★3 取得支援 / クライアント向け</p>
+  </div>
+
+  <!-- 認証セクション -->
+  <div id="auth-section" class="visible">
+    <div class="card">
+      <h2>🔐 認証</h2>
+      <div class="form-group">
+        <label>会員番号</label>
+        <input id="auth-tid" placeholder="例: 800801" maxlength="10">
+      </div>
+      <div class="form-group">
+        <label>メールアドレス</label>
+        <input id="auth-email" type="email" placeholder="担当者のメールアドレス">
+      </div>
+      <button class="btn btn-primary" id="auth-btn">ログイン</button>
+      <div id="auth-msg"></div>
+    </div>
+  </div>
+
+  <!-- アップロードセクション -->
+  <div id="upload-section">
+    <div id="company-banner" class="banner"></div>
+
+    <div class="card">
+      <h2>📄 規程をアップロードする</h2>
+      <div class="warn-banner">
+        <strong>ご注意ください</strong><br>
+        ・ファイルサイズは5MB以下、目安として20ページ以内を推奨します<br>
+        ・ページ数の多い規程は章ごとに分割するとより精度が高まります<br>
+        ・解析には3〜10分かかります。完了までそのままお待ちください
+      </div>
+
+      <div class="form-group">
+        <label>ファイルを選択（PDF / docx）</label>
+        <label class="file-label" id="file-label">
+          <span>📎</span>
+          <span id="file-label-text">クリックしてファイルを選択</span>
+          <input type="file" id="reg-file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+        </label>
+        <div class="file-name" id="file-name-disp"></div>
+      </div>
+
+      <div id="prog-wrap" class="prog-bar" style="display:none">
+        <div class="prog-bar-fill" id="prog-fill" style="width:0%"></div>
+      </div>
+      <div class="status-msg" id="status-msg" style="display:none"></div>
+
+      <button class="btn btn-primary" id="upload-btn" disabled>解析を開始する</button>
+      <div id="upload-msg"></div>
+    </div>
+
+    <!-- 解析済み規程一覧 -->
+    <div class="card" id="history-card" style="display:none">
+      <h2>✅ 解析済み規程</h2>
+      <ul class="history" id="history-list"></ul>
+      <div class="notice">解析結果はアドバイザーが確認します。追加でアップロードしたい規程があれば上のフォームからアップロードしてください。</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CF = 'https://asia-northeast1-scs-star3-service.cloudfunctions.net';
+let st = { tenantId: null, company: null, uploadedRegs: [] };
+
+async function apiPost(endpoint, body, timeoutMs) {
+  const timeout = timeoutMs || 120000;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  try {
+    const res = await fetch(CF + '/' + endpoint, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body), signal: controller.signal,
+    });
+    clearTimeout(timer);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'エラーが発生しました');
+    return data;
+  } catch(e) {
+    clearTimeout(timer);
+    if (e.name === 'AbortError') throw new Error('処理がタイムアウトしました。時間をおいて再度お試しください。');
+    throw e;
+  }
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result.split(',')[1]);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+function showMsg(el, type, text) {
+  el.className = 'msg msg-' + type;
+  el.textContent = text;
+}
+
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  list.innerHTML = st.uploadedRegs.map(r =>
+    `<li><span>📄 ${r.regulation_name}</span><span class="chip">解析完了</span></li>`
+  ).join('');
+  document.getElementById('history-card').style.display = st.uploadedRegs.length > 0 ? 'block' : 'none';
+}
+
+// ─── URLパラメータ自動認証（将来拡張用） ───
+async function init() {
+  const params = new URLSearchParams(location.search);
+  const tid = params.get('t');
+  const tok = params.get('tok');
+  const exp = params.get('exp');
+
+  if (tid && tok && exp) {
+    // トークン自動認証は不可（upload.htmlはメール認証のみ）
+    // ただしtenant_idを先行入力しておく
+    document.getElementById('auth-tid').value = tid;
+    document.getElementById('auth-email').focus();
+  }
+}
+
+// ─── 認証 ───
+document.getElementById('auth-btn').addEventListener('click', async () => {
+  const tid   = document.getElementById('auth-tid').value.trim();
+  const email = document.getElementById('auth-email').value.trim();
+  const msgEl = document.getElementById('auth-msg');
+  if (!tid || !email) { showMsg(msgEl, 'error', '会員番号とメールアドレスを入力してください'); return; }
+
+  document.getElementById('auth-btn').disabled = true;
+  document.getElementById('auth-btn').textContent = '確認中...';
+  msgEl.className = ''; msgEl.textContent = '';
+
+  try {
+    const data = await apiPost('getTenantInfo', { tenant_id: tid, email });
+    st.tenantId = tid;
+    st.company  = data.company;
+    st.uploadedRegs = data.analyzed_regulations || [];
+
+    const c = st.company;
+    document.getElementById('company-banner').innerHTML =
+      `<strong>${c.company_name}</strong>（${c.employee_range || ''}）<br>` +
+      `CISO: ${c.ciso_name || '未設定'} / 担当: ${c.sec_team_name || '未設定'}`;
+
+    document.getElementById('auth-section').classList.remove('visible');
+    document.getElementById('upload-section').classList.add('visible');
+    renderHistory();
+  } catch(e) {
+    showMsg(msgEl, 'error', e.message);
+    document.getElementById('auth-btn').disabled = false;
+    document.getElementById('auth-btn').textContent = 'ログイン';
+  }
+});
+
+document.getElementById('auth-email').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('auth-btn').click();
+});
+
+// ─── ファイル選択 ───
+document.getElementById('reg-file').addEventListener('change', e => {
+  const f = e.target.files[0];
+  const dispEl = document.getElementById('file-name-disp');
+  const uploadBtn = document.getElementById('upload-btn');
+  if (!f) return;
+  if (f.size > 5 * 1024 * 1024) {
+    dispEl.textContent = '⚠ 5MBを超えています。章ごとに分割してアップロードしてください。';
+    dispEl.style.color = '#dc2626';
+    uploadBtn.disabled = true;
+    return;
+  }
+  dispEl.textContent = f.name + '（' + (f.size / 1024).toFixed(0) + ' KB）';
+  dispEl.style.color = '';
+  uploadBtn.disabled = false;
+});
+
+// ─── アップロード実行 ───
+document.getElementById('upload-btn').addEventListener('click', async () => {
+  const file = document.getElementById('reg-file').files[0];
+  if (!file) return;
+
+  const uploadBtn = document.getElementById('upload-btn');
+  const msgEl = document.getElementById('upload-msg');
+  const progWrap = document.getElementById('prog-wrap');
+  const progFill = document.getElementById('prog-fill');
+  const statusMsg = document.getElementById('status-msg');
+
+  uploadBtn.disabled = true;
+  msgEl.className = ''; msgEl.textContent = '';
+  progWrap.style.display = 'block';
+  statusMsg.style.display = 'block';
+
+  const statusMsgs = [
+    '規程テキストを抽出中...',
+    'AIが規程を読み込んでいます...',
+    '大分類ごとに評価中（7段階）...',
+    'もう少しお待ちください...',
+    'まもなく完了します...',
+  ];
+  let msgIdx = 0;
+  statusMsg.textContent = statusMsgs[0];
+  const statusTimer = setInterval(() => {
+    msgIdx = Math.min(msgIdx + 1, statusMsgs.length - 1);
+    statusMsg.textContent = statusMsgs[msgIdx];
+  }, 90000);
+
+  let pct = 0;
+  const progTimer = setInterval(() => {
+    pct = Math.min(pct + 0.3, 90);
+    progFill.style.width = pct + '%';
+  }, 3000);
+
+  try {
+    const base64   = await fileToBase64(file);
+    const mimeType = file.name.endsWith('.pdf')
+      ? 'application/pdf'
+      : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+    // Step1: dry_run で見積もり
+    statusMsg.textContent = '規程テキストを抽出中...';
+    const estimate = await apiPost('analyzeRegulation', {
+      tenant_id: st.tenantId,
+      regulation_type: 'その他',
+      file_name: file.name,
+      file_base64: base64,
+      mime_type: mimeType,
+      dry_run: true,
+    });
+    clearInterval(progTimer);
+    progFill.style.width = '15%';
+
+    const est = estimate.estimate;
+
+    if (est.needs_throttle) {
+      // 長文確認
+      const ok = confirm(
+        `この規程は ${est.text_length.toLocaleString()} 文字（推定 ${est.estimated_minutes} 分）です。\n` +
+        `規程を章ごとに分割するとより短時間で処理できます。\n\nこのまま解析を開始しますか？`
+      );
+      if (!ok) {
+        clearInterval(statusTimer);
+        progWrap.style.display = 'none';
+        statusMsg.style.display = 'none';
+        progFill.style.width = '0%';
+        uploadBtn.disabled = false;
+        showMsg(msgEl, 'warn', '解析をキャンセルしました。規程を分割してから再度お試しください。');
+        return;
+      }
+    }
+
+    // Step2: 本実行
+    let pct2 = 15;
+    const progTimer2 = setInterval(() => {
+      pct2 = Math.min(pct2 + 0.3, 90);
+      progFill.style.width = pct2 + '%';
+    }, 3000);
+    let msgIdx2 = 0;
+    statusMsg.textContent = statusMsgs[0];
+    const statusTimer2 = setInterval(() => {
+      msgIdx2 = Math.min(msgIdx2 + 1, statusMsgs.length - 1);
+      statusMsg.textContent = statusMsgs[msgIdx2];
+    }, 90000);
+
+    const result = await apiPost('analyzeRegulation', {
+      tenant_id: st.tenantId,
+      regulation_type: 'その他',
+      file_name: file.name,
+      file_base64: base64,
+      mime_type: mimeType,
+    }, 1800000); // 30分タイムアウト
+
+    clearInterval(progTimer2); clearInterval(statusTimer2); clearInterval(statusTimer);
+    progFill.style.width = '100%';
+    statusMsg.style.display = 'none';
+    setTimeout(() => { progWrap.style.display = 'none'; progFill.style.width = '0%'; }, 600);
+
+    const regName = result.regulation_name || file.name;
+    st.uploadedRegs.push({ regulation_name: regName, regulation_type: '規程' });
+
+    // フォームリセット
+    document.getElementById('reg-file').value = '';
+    document.getElementById('file-name-disp').textContent = '';
+    uploadBtn.disabled = true;
+    document.getElementById('file-label-text').textContent = 'クリックしてファイルを選択';
+
+    let successMsg = `「${regName}」の解析が完了しました。`;
+    if (result.summary) successMsg += '\n' + result.summary;
+
+    let failNote = '';
+    if (result.failed_categories && result.failed_categories.length > 0) {
+      failNote = '\n⚠ 一部の評価が完了していません: ' +
+        result.failed_categories.map(f => f.category).join('、') +
+        '\n（規程を分割して再アップロードすると改善する場合があります）';
+      showMsg(msgEl, 'warn', successMsg + failNote);
+    } else {
+      showMsg(msgEl, 'success', successMsg);
+    }
+
+    renderHistory();
+
+  } catch(e) {
+    clearInterval(progTimer); clearInterval(statusTimer);
+    progWrap.style.display = 'none';
+    statusMsg.style.display = 'none';
+    progFill.style.width = '0%';
+    uploadBtn.disabled = false;
+    showMsg(msgEl, 'error', '⚠ アップロードに失敗しました: ' + e.message);
+  }
+});
+
+init();
+</script>
+</body>
+</html>
