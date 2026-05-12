@@ -125,22 +125,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans",san
       <div class="status-msg" id="status-msg" style="display:none"></div>
 
       <button class="btn btn-primary" id="upload-btn" disabled>解析を開始する</button>
-      <div id="confirm-area" style="display:none;background:#fffbeb;border:1px solid #fbbf24;border-radius:8px;padding:12px 14px;margin-top:10px;">
-        <strong>⏱ 処理時間の見積もり</strong><br>
-        <span id="est-text" style="font-size:12px"></span><br>
-        <span style="font-size:11px;color:#92400e">規程を章ごとに分割すると処理時間を短縮でき、精度も向上します</span><br>
-        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-          <button class="btn btn-primary" id="confirm-btn" style="flex:1;min-width:200px;font-size:13px"></button>
-          <button class="btn btn-secondary" id="cancel-btn" style="flex:1;min-width:120px;font-size:13px">キャンセルして分割する</button>
-        </div>
-      </div>
-      <div id="confirm-area" style="display:none;background:#fffbeb;border:1px solid #fbbf24;border-radius:8px;padding:12px 14px;margin-top:10px;">
-        <strong>⏱ 処理時間の見積もり</strong><br>
-        <span id="est-text" style="font-size:12px"></span><br>
-        <span style="font-size:11px;color:#92400e">規程を章ごとに分割すると処理時間を短縮でき、精度も向上します</span><br>
-        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-          <button class="btn btn-primary" id="confirm-btn" style="flex:1;min-width:200px;font-size:13px"></button>
-          <button class="btn btn-secondary" id="cancel-btn" style="flex:1;min-width:120px;font-size:13px">キャンセルして分割する</button>
+      <div id="confirm-area" style="display:none;background:#fef2f2;border:1.5px solid #fca5a5;border-radius:8px;padding:14px 16px;margin-top:10px;">
+        <strong style="color:#991b1b">⚠️ この規程は分割が必要です</strong><br>
+        <span id="est-text" style="font-size:12px;color:#7f1d1d"></span><br>
+        <span style="font-size:11px;color:#b91c1c">目安は10,000文字・10分以内です。大きすぎる規程はタイムアウトや判定精度低下の原因になります。</span><br>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <button class="btn btn-secondary" id="cancel-btn" style="flex:1;min-width:180px;font-size:13px;background:#fef2f2;border-color:#fca5a5;color:#991b1b">📄 章ごとに分割してアップロードする（推奨）</button>
+          <button class="btn" id="confirm-btn" style="flex:0;min-width:140px;font-size:11px;padding:8px 12px;background:#f3f4f6;color:#6b7280;border:1px solid #d1d5db;border-radius:8px;cursor:pointer">このまま試す（非推奨）</button>
         </div>
       </div>
       <div id="upload-msg"></div>
@@ -349,9 +340,7 @@ document.getElementById('upload-btn').addEventListener('click', async () => {
     if (est.needs_throttle) {
       // 長文：確認エリアを表示してユーザーに選ばせる
       document.getElementById('est-text').textContent =
-        `テキスト: ${est.text_length.toLocaleString()}文字 / 推定処理時間: 約${est.estimated_minutes}分`;
-      document.getElementById('confirm-btn').textContent =
-        `このまま解析を開始する（約${est.estimated_minutes}分）`;
+        `テキスト: ${est.text_length.toLocaleString()}文字 / 推定処理時間: 約${est.estimated_minutes}分（目安10,000文字・10分以内）`;
       confirmArea.style.display = 'block';
 
       const userChoice = await new Promise(resolve => {
