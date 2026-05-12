@@ -102,6 +102,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans",san
       <h2>📄 規程をアップロードする</h2>
       <div class="warn-banner">
         <strong>ご注意ください</strong><br>
+        ・<strong>スキャンしたPDF（画像PDF）はアップロードできません。</strong>Wordで作成した規程をPDF保存したもの、またはそのまま.docxファイルでアップロードしてください<br>
+        ・スキャンPDFしかない場合は、担当アドバイザーにご相談ください<br>
         ・ファイルサイズは5MB以下、目安として20ページ以内を推奨します<br>
         ・ページ数の多い規程は章ごとに分割するとより精度が高まります<br>
         ・解析には3〜10分かかります。完了までそのままお待ちください
@@ -123,6 +125,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans",san
       <div class="status-msg" id="status-msg" style="display:none"></div>
 
       <button class="btn btn-primary" id="upload-btn" disabled>解析を開始する</button>
+      <div id="confirm-area" style="display:none;background:#fffbeb;border:1px solid #fbbf24;border-radius:8px;padding:12px 14px;margin-top:10px;">
+        <strong>⏱ 処理時間の見積もり</strong><br>
+        <span id="est-text" style="font-size:12px"></span><br>
+        <span style="font-size:11px;color:#92400e">規程を章ごとに分割すると処理時間を短縮でき、精度も向上します</span><br>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          <button class="btn btn-primary" id="confirm-btn" style="flex:1;min-width:200px;font-size:13px"></button>
+          <button class="btn btn-secondary" id="cancel-btn" style="flex:1;min-width:120px;font-size:13px">キャンセルして分割する</button>
+        </div>
+      </div>
+      <div id="confirm-area" style="display:none;background:#fffbeb;border:1px solid #fbbf24;border-radius:8px;padding:12px 14px;margin-top:10px;">
+        <strong>⏱ 処理時間の見積もり</strong><br>
+        <span id="est-text" style="font-size:12px"></span><br>
+        <span style="font-size:11px;color:#92400e">規程を章ごとに分割すると処理時間を短縮でき、精度も向上します</span><br>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          <button class="btn btn-primary" id="confirm-btn" style="flex:1;min-width:200px;font-size:13px"></button>
+          <button class="btn btn-secondary" id="cancel-btn" style="flex:1;min-width:120px;font-size:13px">キャンセルして分割する</button>
+        </div>
+      </div>
       <div id="upload-msg"></div>
     </div>
 
@@ -259,8 +279,10 @@ document.getElementById('upload-btn').addEventListener('click', async () => {
   const progWrap = document.getElementById('prog-wrap');
   const progFill = document.getElementById('prog-fill');
   const statusMsg = document.getElementById('status-msg');
+  const confirmArea = document.getElementById('confirm-area');
 
   uploadBtn.disabled = true;
+  confirmArea.style.display = 'none';
   msgEl.className = ''; msgEl.textContent = '';
   progWrap.style.display = 'block';
   statusMsg.style.display = 'block';
@@ -306,17 +328,39 @@ document.getElementById('upload-btn').addEventListener('click', async () => {
 
     const est = estimate.estimate;
 
+    // スキャンPDF検出：テキストがほぼ抽出できていない場合は警告して中断
+    if (est.text_length < 500) {
+      clearInterval(statusTimer);
+      progWrap.style.display = 'none';
+      statusMsg.style.display = 'none';
+      progFill.style.width = '0%';
+      uploadBtn.disabled = false;
+      msgEl.className = 'msg msg-error';
+      msgEl.innerHTML = `<strong>⚠ このファイルはスキャンPDF（画像PDF）の可能性があります</strong><br>
+        テキストを抽出できませんでした（抽出文字数: ${est.text_length}文字）。<br>
+        Wordで作成した規程を「名前を付けて保存」でPDF化したもの、または.docxファイルをアップロードしてください。<br>
+        スキャンPDFしかない場合は担当アドバイザーにご相談ください。`;
+      return;
+    }
+    progWrap.style.display = 'none';
+    statusMsg.style.display = 'none';
+    progFill.style.width = '0%';
+
     if (est.needs_throttle) {
-      // 長文確認
-      const ok = confirm(
-        `この規程は ${est.text_length.toLocaleString()} 文字（推定 ${est.estimated_minutes} 分）です。\n` +
-        `規程を章ごとに分割するとより短時間で処理できます。\n\nこのまま解析を開始しますか？`
-      );
-      if (!ok) {
+      // 長文：確認エリアを表示してユーザーに選ばせる
+      document.getElementById('est-text').textContent =
+        `テキスト: ${est.text_length.toLocaleString()}文字 / 推定処理時間: 約${est.estimated_minutes}分`;
+      document.getElementById('confirm-btn').textContent =
+        `このまま解析を開始する（約${est.estimated_minutes}分）`;
+      confirmArea.style.display = 'block';
+
+      const userChoice = await new Promise(resolve => {
+        document.getElementById('confirm-btn').onclick = () => { confirmArea.style.display = 'none'; resolve(true); };
+        document.getElementById('cancel-btn').onclick  = () => { confirmArea.style.display = 'none'; resolve(false); };
+      });
+
+      if (!userChoice) {
         clearInterval(statusTimer);
-        progWrap.style.display = 'none';
-        statusMsg.style.display = 'none';
-        progFill.style.width = '0%';
         uploadBtn.disabled = false;
         showMsg(msgEl, 'warn', '解析をキャンセルしました。規程を分割してから再度お試しください。');
         return;
@@ -324,6 +368,11 @@ document.getElementById('upload-btn').addEventListener('click', async () => {
     }
 
     // Step2: 本実行
+    const estimatedMin = est.estimated_minutes || 3;
+    showMsg(msgEl, 'info', `「${file.name}」を解析中...（推定 約${estimatedMin}分）`);
+    progWrap.style.display = 'block';
+    statusMsg.style.display = 'block';
+    statusMsg.textContent = statusMsgs[0];
     let pct2 = 15;
     const progTimer2 = setInterval(() => {
       pct2 = Math.min(pct2 + 0.3, 90);
@@ -358,18 +407,20 @@ document.getElementById('upload-btn').addEventListener('click', async () => {
     uploadBtn.disabled = true;
     document.getElementById('file-label-text').textContent = 'クリックしてファイルを選択';
 
-    let successMsg = `「${regName}」の解析が完了しました。`;
-    if (result.summary) successMsg += '\n' + result.summary;
-
-    let failNote = '';
+    const s = result.summary || '';
+    let failureHtml = '';
     if (result.failed_categories && result.failed_categories.length > 0) {
-      failNote = '\n⚠ 一部の評価が完了していません: ' +
-        result.failed_categories.map(f => f.category).join('、') +
-        '\n（規程を分割して再アップロードすると改善する場合があります）';
-      showMsg(msgEl, 'warn', successMsg + failNote);
-    } else {
-      showMsg(msgEl, 'success', successMsg);
+      const failedNames = result.failed_categories
+        .map(f => `<li>${f.category}（${f.criteria_count || ''}件: ${f.reason || ''}）</li>`).join('');
+      failureHtml = `<div class="msg msg-warn" style="margin-top:8px;font-size:12px">
+        <strong>⚠ 一部の評価が完了していません</strong><br>
+        <ul style="margin:4px 0 0 16px;padding:0">${failedNames}</ul>
+        <div style="margin-top:4px">規程を分割して再アップロードすると改善する場合があります。</div>
+      </div>`;
     }
+    msgEl.className = 'msg msg-success';
+    msgEl.innerHTML = `「<strong>${regName}</strong>」の解析が完了しました。` +
+      (s ? `<br><span style="font-size:12px">${s}</span>` : '') + failureHtml;
 
     renderHistory();
 
