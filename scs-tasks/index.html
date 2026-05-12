@@ -171,8 +171,12 @@ async function apiPost(endpoint, body, timeoutMs) {
 
 async function proposeTasks() {
   const tenantId = document.getElementById('tenant-id').value.trim();
-  const email = document.getElementById('email').value.trim();
-  if (!tenantId || !email) { showMsg('error', '会員番号とメールアドレスを入力してください。'); return; }
+  const email = document.getElementById('email') ? document.getElementById('email').value.trim() : '';
+  const tok = window._tok || '';
+  const exp = window._exp || '';
+  if (!tenantId) { showMsg('error', '会員番号を入力してください。'); return; }
+  if (!tok && !email) { showMsg('error', '会員番号とメールアドレスを入力してください。'); return; }
+  const authPayload = tok ? { tenant_id: tenantId, tok, exp } : { tenant_id: tenantId, email };
 
   hideMsg();
   document.getElementById('propose-btn').disabled = true;
@@ -181,7 +185,7 @@ async function proposeTasks() {
   document.getElementById('result-area').style.display = 'none';
 
   try {
-    const data = await apiPost('generateTasks', { tenant_id: tenantId, email, dry_run: true }, 180000);
+    const data = await apiPost('generateTasks', { ...authPayload, dry_run: true }, 180000);
 
     document.getElementById('loading').style.display = 'none';
 
@@ -276,7 +280,10 @@ function selectByPriority(level) {
 
 async function registerTasks() {
   const tenantId = document.getElementById('tenant-id').value.trim();
-  const email = document.getElementById('email').value.trim();
+  const email = document.getElementById('email') ? document.getElementById('email').value.trim() : '';
+  const tok = window._tok || '';
+  const exp = window._exp || '';
+  const authPayload = tok ? { tenant_id: tenantId, tok, exp } : { tenant_id: tenantId, email };
 
   // 選択されたタスクを収集
   const selectedTasks = [];
@@ -300,8 +307,7 @@ async function registerTasks() {
 
   try {
     const data = await apiPost('generateTasks', {
-      tenant_id: tenantId,
-      email,
+      ...authPayload,
       dry_run: false,
       selected_tasks: selectedTasks,
     });
@@ -324,6 +330,25 @@ async function registerTasks() {
 }
 
 document.addEventListener('keydown', e => { if (e.key === 'Enter') proposeTasks(); });
+
+// URLパラメータからの自動入力
+(function(){
+  const params = new URLSearchParams(location.search);
+  const tid = params.get('t');
+  const tok = params.get('tok');
+  const exp = params.get('exp');
+  if (tid) document.getElementById('tenant-id').value = tid;
+  if (tok && exp) {
+    // メール入力欄を非表示にしてトークン認証に切り替える
+    const emailEl = document.getElementById('email');
+    if (emailEl) {
+      const emailGroup = emailEl.closest('.form-group') || emailEl.parentElement;
+      if (emailGroup) emailGroup.style.display = 'none';
+    }
+    // generateTasks呼び出し時にtok/expを渡すため変数に保持
+    window._tok = tok; window._exp = exp;
+  }
+})();
 </script>
 </body>
 </html>
