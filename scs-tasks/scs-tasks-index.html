@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCS★3 タスク一覧の生成</title>
+<style>
+:root {
+  --bg: #f7f8fa; --card: #fff; --primary: #2B5C8A; --primary-hover: #1e4670;
+  --text1: #2D3436; --text2: #636E72; --border: #D5D8DC;
+  --success: #477D61; --error: #9B4D4D; --warn: #B08D3E;
+  --bgLight: #F2F4F5;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", sans-serif;
+  background: var(--bg); color: var(--text1); min-height:100vh; display:flex; justify-content:center; padding:24px; }
+
+.container { width:100%; max-width:800px; }
+
+.card { background: var(--card); border-radius:16px; padding:28px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04); margin-bottom:16px; }
+
+.logo { text-align:center; margin-bottom:24px; }
+.logo h1 { font-size:20px; color: var(--primary); margin-bottom:4px; }
+.logo p { font-size:13px; color: var(--text2); }
+
+.form-group { margin-bottom:14px; }
+.form-group label { display:block; font-size:13px; font-weight:600; color: var(--text2); margin-bottom:6px; }
+.form-group input { width:100%; padding:10px 14px; border:1px solid var(--border); border-radius:8px;
+  font-size:15px; outline:none; }
+.form-group input:focus { border-color: var(--primary); }
+
+.btn { padding:12px 24px; border:none; border-radius:10px; font-size:14px; font-weight:600;
+  cursor:pointer; transition: all 0.2s; }
+.btn-primary { background: var(--primary); color:#fff; width:100%; }
+.btn-primary:hover { background: var(--primary-hover); }
+.btn-primary:disabled { background: #94a3b8; cursor:not-allowed; }
+.btn-success { background: var(--success); color:#fff; width:100%; margin-top:12px; }
+.btn-success:hover { background: #3a6b52; }
+.btn-success:disabled { background: #94a3b8; cursor:not-allowed; }
+
+.msg { padding:12px 16px; border-radius:10px; font-size:13px; line-height:1.6; margin-top:12px; display:none; }
+.msg-info { background:#E8EEF4; color: var(--primary); border:1px solid #B8CDE0; }
+.msg-error { background:#fef2f2; color: var(--error); border:1px solid #fecaca; }
+.msg-success { background:#f0fdf4; color: var(--success); border:1px solid #bbf7d0; }
+
+.loading { text-align:center; padding:40px; color: var(--text2); font-size:14px; display:none; }
+.loading .spinner { display:inline-block; width:24px; height:24px; border:3px solid var(--border);
+  border-top-color: var(--primary); border-radius:50%; animation: spin 0.8s linear infinite; margin-bottom:12px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* タスクリスト */
+.task-list { display:none; }
+.task-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+.task-header h2 { font-size:16px; color: var(--text1); }
+.task-header .count { font-size:13px; color: var(--text2); }
+.select-actions { display:flex; gap:8px; margin-bottom:12px; }
+.select-actions button { padding:6px 12px; border:1px solid var(--border); border-radius:6px;
+  background:#fff; font-size:12px; cursor:pointer; color: var(--text2); }
+.select-actions button:hover { background: var(--bgLight); }
+
+.task-group-header { font-size:13px; font-weight:600; color: var(--primary); padding:8px 0 4px;
+  border-bottom:2px solid var(--primary); margin-top:16px; margin-bottom:4px; }
+
+.task-item { display:flex; align-items:flex-start; padding:10px 8px; border-bottom:1px solid var(--border);
+  transition: background 0.15s; }
+.task-item:hover { background: var(--bgLight); }
+.task-item input[type=checkbox] { margin-top:4px; margin-right:12px; width:18px; height:18px;
+  accent-color: var(--primary); flex-shrink:0; cursor:pointer; }
+.task-item .task-info { flex:1; }
+.task-item .task-name { font-size:14px; font-weight:500; color: var(--text1); }
+.task-item .task-meta { font-size:11px; color: var(--text2); margin-top:3px; line-height:1.5; }
+.task-item .task-desc { font-size:12px; color: var(--text2); margin-top:2px; }
+.task-item .priority-高 { color: var(--error); font-weight:600; }
+.task-item .priority-中 { color: var(--warn); font-weight:600; }
+.task-item .priority-低 { color: var(--text2); }
+
+.result-area { display:none; }
+.footer { text-align:center; margin-top:20px; font-size:12px; color: var(--text2); }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <div class="logo">
+      <h1>📋 SCS★3 タスク一覧の生成</h1>
+      <p>未達成・一部達成の評価基準からタスクを自動提案します</p>
+    </div>
+
+    <!-- 認証フォーム -->
+    <div id="auth-form">
+      <div class="form-group">
+        <label>会員番号（テナントID）</label>
+        <input type="text" id="tenant-id" placeholder="例: 800801">
+      </div>
+      <div class="form-group">
+        <label>メールアドレス</label>
+        <input type="email" id="email" placeholder="登録メールアドレス">
+      </div>
+      <button class="btn btn-primary" id="propose-btn" onclick="proposeTasks()">タスク案を生成する</button>
+    </div>
+
+    <div class="msg" id="msg"></div>
+
+    <!-- ローディング -->
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <div>チェックリストを分析してタスクを生成中...</div>
+    </div>
+  </div>
+
+  <!-- タスクリスト -->
+  <div class="card task-list" id="task-list">
+    <div class="task-header">
+      <h2>📋 提案されたタスク一覧</h2>
+      <span class="count" id="task-count"></span>
+    </div>
+
+    <div class="select-actions">
+      <button onclick="selectAll(true)">すべて選択</button>
+      <button onclick="selectAll(false)">すべて解除</button>
+      <button onclick="selectByPriority('高')">高優先のみ</button>
+    </div>
+
+    <div id="task-items"></div>
+
+    <button class="btn btn-success" id="register-btn" onclick="registerTasks()">
+      選択したタスクをNotionに登録する
+    </button>
+  </div>
+
+  <!-- 結果表示 -->
+  <div class="card result-area" id="result-area">
+    <div class="msg msg-success" style="display:block" id="result-msg"></div>
+  </div>
+
+  <div class="footer">SCS★3 取得支援コンサルティングサービス</div>
+</div>
+
+<script>
+const CF = 'https://asia-northeast1-scs-star3-service.cloudfunctions.net';
+let proposedTasks = [];
+
+function showMsg(type, text) {
+  const el = document.getElementById('msg');
+  el.className = `msg msg-${type}`;
+  el.innerHTML = text;
+  el.style.display = 'block';
+}
+function hideMsg() { document.getElementById('msg').style.display = 'none'; }
+
+async function apiPost(endpoint, body, timeoutMs) {
+  const timeout = timeoutMs || 120000;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  try {
+    const res = await fetch(CF + '/' + endpoint, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body), signal: controller.signal,
+    });
+    clearTimeout(timer);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'エラーが発生しました');
+    return data;
+  } catch (e) {
+    clearTimeout(timer);
+    if (e.name === 'AbortError') throw new Error('処理がタイムアウトしました。');
+    throw e;
+  }
+}
+
+async function proposeTasks() {
+  const tenantId = document.getElementById('tenant-id').value.trim();
+  const email = document.getElementById('email') ? document.getElementById('email').value.trim() : '';
+  const tok = window._tok || '';
+  const exp = window._exp || '';
+  if (!tenantId) { showMsg('error', '会員番号を入力してください。'); return; }
+  if (!tok && !email) { showMsg('error', '会員番号とメールアドレスを入力してください。'); return; }
+  const authPayload = tok ? { tenant_id: tenantId, tok, exp } : { tenant_id: tenantId, email };
+
+  hideMsg();
+  document.getElementById('propose-btn').disabled = true;
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('task-list').style.display = 'none';
+  document.getElementById('result-area').style.display = 'none';
+
+  try {
+    const data = await apiPost('generateTasks', { ...authPayload, dry_run: true }, 180000);
+
+    document.getElementById('loading').style.display = 'none';
+
+    if (data.tasks.length === 0) {
+      showMsg('info', data.message || '未達成の評価基準がありません。');
+      document.getElementById('propose-btn').disabled = false;
+      return;
+    }
+
+    proposedTasks = data.tasks;
+    renderTaskList(data.tasks, data.gap_count);
+
+  } catch (e) {
+    document.getElementById('loading').style.display = 'none';
+    showMsg('error', e.message);
+    document.getElementById('propose-btn').disabled = false;
+  }
+}
+
+function renderTaskList(tasks, gapCount) {
+  document.getElementById('task-count').textContent =
+    `${tasks.length}件のタスク（ギャップ${gapCount}件から生成）`;
+
+  // グループ別に整理
+  const groups = {};
+  tasks.forEach((t, i) => {
+    t._index = i;
+    const g = t.group || '未分類';
+    if (!groups[g]) groups[g] = [];
+    groups[g].push(t);
+  });
+
+  const container = document.getElementById('task-items');
+  container.innerHTML = '';
+
+  const groupOrder = ['規程整備', '技術対策', '教育', '証憑収集', 'その他'];
+  const sortedGroups = Object.keys(groups).sort((a, b) => {
+    const ai = groupOrder.indexOf(a);
+    const bi = groupOrder.indexOf(b);
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+  });
+
+  for (const group of sortedGroups) {
+    const header = document.createElement('div');
+    header.className = 'task-group-header';
+    header.textContent = `${group}（${groups[group].length}件）`;
+    container.appendChild(header);
+
+    for (const task of groups[group]) {
+      const div = document.createElement('div');
+      div.className = 'task-item';
+      div.innerHTML = `
+        <input type="checkbox" checked data-index="${task._index}" onchange="updateCount()">
+        <div class="task-info">
+          <div class="task-name">${task.name}</div>
+          <div class="task-meta">
+            <span class="priority-${task.priority}">●${task.priority}</span>
+            ・所要: 約${task.duration_days}日
+            ${task.related_criteria ? '・関連: ' + task.related_criteria.join(', ') : ''}
+          </div>
+          ${task.description ? '<div class="task-desc">' + task.description + '</div>' : ''}
+        </div>
+      `;
+      container.appendChild(div);
+    }
+  }
+
+  document.getElementById('task-list').style.display = 'block';
+  updateCount();
+}
+
+function updateCount() {
+  const checked = document.querySelectorAll('#task-items input[type=checkbox]:checked').length;
+  const total = proposedTasks.length;
+  document.getElementById('register-btn').textContent =
+    `選択した${checked}件のタスクをNotionに登録する`;
+  document.getElementById('register-btn').disabled = checked === 0;
+}
+
+function selectAll(checked) {
+  document.querySelectorAll('#task-items input[type=checkbox]').forEach(cb => cb.checked = checked);
+  updateCount();
+}
+
+function selectByPriority(level) {
+  document.querySelectorAll('#task-items input[type=checkbox]').forEach(cb => {
+    const idx = parseInt(cb.dataset.index);
+    cb.checked = proposedTasks[idx].priority === level;
+  });
+  updateCount();
+}
+
+async function registerTasks() {
+  const tenantId = document.getElementById('tenant-id').value.trim();
+  const email = document.getElementById('email') ? document.getElementById('email').value.trim() : '';
+  const tok = window._tok || '';
+  const exp = window._exp || '';
+  const authPayload = tok ? { tenant_id: tenantId, tok, exp } : { tenant_id: tenantId, email };
+
+  // 選択されたタスクを収集
+  const selectedTasks = [];
+  document.querySelectorAll('#task-items input[type=checkbox]:checked').forEach(cb => {
+    const idx = parseInt(cb.dataset.index);
+    const t = proposedTasks[idx];
+    selectedTasks.push({
+      name: t.name,
+      group: t.group || 'その他',
+      priority: t.priority || '中',
+      description: t.description || '',
+      related_criteria: t.related_criteria || [],
+      assignee: '',
+    });
+  });
+
+  if (selectedTasks.length === 0) { showMsg('error', 'タスクが選択されていません。'); return; }
+
+  document.getElementById('register-btn').disabled = true;
+  document.getElementById('register-btn').textContent = '登録中...';
+
+  try {
+    const data = await apiPost('generateTasks', {
+      ...authPayload,
+      dry_run: false,
+      selected_tasks: selectedTasks,
+    });
+
+    document.getElementById('task-list').style.display = 'none';
+    document.getElementById('result-area').style.display = 'block';
+
+    let resultHtml = `✅ <strong>${data.registered}件のタスクをNotionに登録しました。</strong><br>
+      <span style="font-size:12px">Notionのタスク管理DBで担当者やスケジュールを調整してください。</span>`;
+    if (data.errors && data.errors.length > 0) {
+      resultHtml += `<br><span style="color:var(--error);font-size:12px">⚠ ${data.errors.length}件の登録に失敗しました。</span>`;
+    }
+    document.getElementById('result-msg').innerHTML = resultHtml;
+
+  } catch (e) {
+    showMsg('error', e.message);
+    document.getElementById('register-btn').disabled = false;
+    document.getElementById('register-btn').textContent = '選択したタスクをNotionに登録する';
+  }
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Enter') proposeTasks(); });
+
+// URLパラメータからの自動入力
+(function(){
+  const params = new URLSearchParams(location.search);
+  const tid = params.get('t');
+  const tok = params.get('tok');
+  const exp = params.get('exp');
+  if (tid) document.getElementById('tenant-id').value = tid;
+  if (tok && exp) {
+    // メール入力欄を非表示にしてトークン認証に切り替える
+    const emailEl = document.getElementById('email');
+    if (emailEl) {
+      const emailGroup = emailEl.closest('.form-group') || emailEl.parentElement;
+      if (emailGroup) emailGroup.style.display = 'none';
+    }
+    // generateTasks呼び出し時にtok/expを渡すため変数に保持
+    window._tok = tok; window._exp = exp;
+  }
+})();
+</script>
+</body>
+</html>
