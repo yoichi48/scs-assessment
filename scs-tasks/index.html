@@ -196,6 +196,8 @@ async function proposeTasks() {
     }
 
     proposedTasks = data.tasks;
+    window._logId = data.log_id || null;
+    window._allProposedCount = data.tasks.length;
     renderTaskList(data.tasks, data.gap_count);
 
   } catch (e) {
@@ -310,6 +312,8 @@ async function registerTasks() {
       ...authPayload,
       dry_run: false,
       selected_tasks: selectedTasks,
+      log_id: window._logId || null,
+      all_proposed_count: window._allProposedCount || 0,
     });
 
     document.getElementById('task-list').style.display = 'none';
