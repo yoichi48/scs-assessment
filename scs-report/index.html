@@ -39,6 +39,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino San
 .msg-info { background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; }
 .msg-error { background:#fef2f2; color: var(--error); border:1px solid #fecaca; }
 .msg-success { background:#f0fdf4; color: var(--success); border:1px solid #bbf7d0; }
+.msg-warn { background:#fffbeb; color:#92400e; border:1px solid #fde68a; }
 
 .progress { margin-top:16px; display:none; }
 .progress-bar { height:6px; background: var(--border); border-radius:3px; overflow:hidden; }
@@ -87,6 +88,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino San
       <a id="download-link" href="#" target="_blank">📥 レポートをダウンロード</a>
       <div class="filename" id="download-filename"></div>
     </div>
+
+    <div class="msg msg-warn" id="task-warning" style="display:none;"></div>
   </div>
 
   <div class="footer">
@@ -196,6 +199,16 @@ async function generateReport() {
 
     if (data.summary) {
       showMsg('success', data.summary);
+    }
+
+    // タスク未紐づけ警告
+    const warnEl = document.getElementById('task-warning');
+    const cov = data.task_coverage;
+    if (cov && cov.uncovered > 0) {
+      warnEl.textContent = `⚠️ 「未達成」「一部達成」の評価基準 ${cov.total_gaps} 件のうち、${cov.uncovered} 件にタスクが紐づいていません。レポートの対応タスク欄が空欄になります。タスクを再生成してからレポートを出力することを推奨します。`;
+      warnEl.style.display = 'block';
+    } else {
+      warnEl.style.display = 'none';
     }
 
   } catch (e) {
