@@ -66,6 +66,12 @@ body{font-family:-apple-system,'Hiragino Sans','Yu Gothic UI',sans-serif;backgro
 .prefill-box{background:var(--ok-bg);border:0.5px solid var(--ok-bd);border-left:3px solid var(--ok-tx);border-radius:var(--rs);padding:8px 12px;font-size:12px;margin:8px 0;color:var(--text);line-height:1.5}
 .prefill-box .pf-label{font-size:10px;color:var(--text2);margin-bottom:3px}
 .pf-actions{display:flex;gap:8px;margin-top:8px;align-items:center}
+.change-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--rs);padding:10px;margin-top:8px}
+.change-card h4{font-size:11px;color:var(--text2);font-weight:400;margin-bottom:6px}
+.change-row{display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;border-bottom:0.5px solid var(--border);font-size:11px;gap:8px}
+.change-row:last-child{border-bottom:none}
+.change-cat{color:var(--text2);flex-shrink:0}
+.change-lvls{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;font-weight:500}
 .ti-wrap{display:flex;gap:6px;margin-top:7px}
 .ti{flex:1;background:var(--bg);border:0.5px solid var(--border2);color:var(--text);padding:8px 12px;border-radius:var(--rs);font-size:13px;font-family:inherit;outline:none}
 .ti:focus{border-color:var(--info-tx)}
@@ -426,15 +432,34 @@ async function showSummary(){
     document.getElementById('sub-btn').disabled=true;
     document.getElementById('sub-btn').textContent='送信中...';
     addMsg('u','ギャップ推定を実行します');
+    let assessResult = null;
     try{
-      await apiPost('scsAssessment',{tenant_id:st.tenantId,answers:st.answers});
+      assessResult = await apiPost('scsAssessment',{tenant_id:st.tenantId,answers:st.answers});
     }catch(e){ console.warn('scsAssessment:', e.message); }
     st.phase='done'; setProg();
+
+    // チェックリスト更新サマリの生成
+    const cbc = assessResult?.write_result?.changes_by_category || {};
+    const totalChanged = assessResult?.write_result?.updated || 0;
+    const LV_ICON  = {'達成':'●','一部達成':'◐','未達成':'✕'};
+    const LV_COLOR = {'達成':'var(--ok-tx)','一部達成':'var(--warn-tx)','未達成':'var(--err-tx)'};
+    const LV_ORDER = ['達成','一部達成','未達成'];
+    let changeHtml = '';
+    if(totalChanged > 0){
+      const rows = Object.entries(cbc).map(([cat, lvs])=>{
+        const badges = LV_ORDER.filter(l=>lvs[l]).map(l=>
+          `<span style="color:${LV_COLOR[l]}">${LV_ICON[l]} ${l} +${lvs[l]}</span>`).join('');
+        return `<div class="change-row"><span class="change-cat">${cat}</span><span class="change-lvls">${badges}</span></div>`;
+      }).join('');
+      changeHtml = `<div class="change-card"><h4>チェックリスト更新結果（${totalChanged}件の基準が変化）</h4>${rows}</div>`;
+    } else {
+      changeHtml = `<div style="font-size:12px;color:var(--text2);margin-top:6px">チェックリストに変化はありませんでした</div>`;
+    }
     addMsg('ai',`<div style="text-align:center;padding:10px 0">
       <div style="font-size:28px;margin-bottom:8px">✅</div>
       <div style="font-size:15px;font-weight:500;margin-bottom:6px">ギャップ推定が完了しました</div>
-      <div style="font-size:12px;color:var(--text2);line-height:1.75">Notionのチェックリストに結果を反映しました。<br>専門家が確認し、対策ロードマップをお届けします。</div>
-    </div>`);
+      <div style="font-size:12px;color:var(--text2);line-height:1.75;margin-bottom:4px">専門家が確認し、対策ロードマップをお届けします。</div>
+    </div>${changeHtml}`);
   });
 }
 
