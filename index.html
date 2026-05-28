@@ -132,6 +132,10 @@ const Qs = [
     choices:['仕組みあり・定期実施','必要時のみ','なし'] },
   { id:'B1_9', text:'現在利用中のクラウドサービスを選択してください（複数選択可）', hint:'💡 参照規程: AST-001 情報資産管理規程', type:'multi',
     choices:['Microsoft 365 / Teams','Google Workspace','AWS / Azure / GCP','Salesforce / kintone等','利用なし'] },
+  { id:'B3_9', text:'利用中のクラウドサービスのセキュリティ要件確認・取扱合意はどの程度できていますか？',
+    hint:'💡 参照規程: AST-001 情報資産管理規程（クラウドサービス節）', type:'single',
+    choices:['セキュリティ要件確認済み・取扱合意あり','セキュリティ要件確認済み・利用規約のみ','確認していない'],
+    when: ans => { const c=ans.B1_9; return Array.isArray(c) && !c.includes('利用なし'); } },
   { id:'B3_17', text:'ID（アカウント）の申請・承認プロセスはどのように管理されていますか？', hint:'💡 参照規程: ACC-001 アクセス権管理規程', type:'single',
     choices:['申請・承認プロセスあり・記録','管理者判断で付与','プロセスなし'] },
   { id:'B3_21', text:'多要素認証（MFA）を導入しているシステムを選択してください（複数選択可）', hint:'💡 参照規程: ACC-001 アクセス権管理規程', type:'multi',
@@ -154,7 +158,9 @@ function setProg(){
   const done = st.phase==='done'?total : st.phase==='summary'?Qs.length+1 : st.phase==='questions'?st.q+1 : 0;
   prog.style.width=(done/total*100)+'%';
   const label = st.company ? st.company.company_name : '';
-  const qLabel = st.phase==='questions' ? ` | Q${Math.min(st.q+1,Qs.length)}/${Qs.length}` : '';
+  const _qTotal = Qs.filter(x=>!x.when||x.when(st.answers)).length;
+  const _qPos   = st.phase==='questions' ? Qs.slice(0,st.q+1).filter(x=>!x.when||x.when(st.answers)).length : 0;
+  const qLabel  = st.phase==='questions' ? ` | Q${Math.min(_qPos,_qTotal)}/${_qTotal}` : '';
   hdrSub.textContent = label ? label+qLabel : '認証中...';
 }
 function scroll(){ setTimeout(()=>chat.scrollTop=chat.scrollHeight,40); }
@@ -282,6 +288,14 @@ async function startAuth(){
 async function askQ(){
   if(st.q>=Qs.length){ showSummary(); return; }
   const q=Qs[st.q]; setProg();
+
+  // 条件設問のスキップ（when が false を返す設問は回答なしで次へ）
+  if(q.when && !q.when(st.answers)){ st.q++; askQ(); return; }
+
+  // スキップされた設問を除いた表示位置を計算
+  const qPos   = Qs.slice(0, st.q+1).filter(x => !x.when || x.when(st.answers)).length;
+  const qTotal  = Qs.filter(x => !x.when || x.when(st.answers)).length;
+
   const prefill = (st.prefills||{})[q.id];
 
   if(prefill && q.type==='single'){
@@ -289,7 +303,7 @@ async function askQ(){
     const ch=q.choices.map((c,i)=>`<button class="c-btn" data-v="${c}"><span class="num">${i+1}</span>${c}</button>`).join('')
       +`<button class="c-btn ask" id="ask-btn-${q.id}"><span class="num">?</span>わからない・質問する</button>`;
     await aiMsg(
-      `<div class="qno">Q${st.q+1}/${Qs.length}</div>${q.text}<div class="hint">${q.hint}</div>`+
+      `<div class="qno">Q${qPos}/${qTotal}</div>${q.text}<div class="hint">${q.hint}</div>`+
       `<div class="prefill-box"><div class="pf-label">📋 規程解析から判定</div><strong>${prefill}</strong></div>`+
       `<div class="pf-actions">`+
         `<button class="conf-btn" id="pf-ok-${q.id}">この判定で進む →</button>`+
@@ -314,12 +328,12 @@ async function askQ(){
   if(q.type==='single'){
     const ch=q.choices.map((c,i)=>`<button class="c-btn" data-v="${c}"><span class="num">${i+1}</span>${c}</button>`).join('')
       +`<button class="c-btn ask" id="ask-btn-${q.id}"><span class="num">?</span>わからない・質問する</button>`;
-    await aiMsg(`<div class="qno">Q${st.q+1}/${Qs.length}</div>${q.text}<div class="hint">${q.hint}</div><div class="choices" id="c-${q.id}">${ch}</div>`,450);
+    await aiMsg(`<div class="qno">Q${qPos}/${qTotal}</div>${q.text}<div class="hint">${q.hint}</div><div class="choices" id="c-${q.id}">${ch}</div>`,450);
     bindSingle(q); bindAsk(q);
   }else{
     st.multi=[];
     const ch=q.choices.map(c=>`<button class="m-btn" data-v="${c}"><span class="chk"></span>${c}</button>`).join('');
-    await aiMsg(`<div class="qno">Q${st.q+1}/${Qs.length}（複数選択可）</div>${q.text}<div class="hint">${q.hint}</div>`+
+    await aiMsg(`<div class="qno">Q${qPos}/${qTotal}（複数選択可）</div>${q.text}<div class="hint">${q.hint}</div>`+
       `<div class="multi-wrap" id="m-${q.id}">${ch}</div>`+
       `<div style="display:flex;gap:6px;margin-top:7px"><button class="conf-btn" id="conf-${q.id}">選択を確定する →</button>`+
       `<button class="c-btn ask" id="ask-btn-${q.id}" style="margin:0;font-size:11px"><span class="num">?</span>質問する</button></div>`,450);
