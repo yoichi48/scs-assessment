@@ -63,6 +63,9 @@ body{font-family:-apple-system,'Hiragino Sans','Yu Gothic UI',sans-serif;backgro
 .m-btn.sel .chk{background:var(--ok-bg);border-color:var(--ok-tx);color:var(--ok-tx)}
 .conf-btn{margin-top:7px;background:var(--info-bg);border:0.5px solid var(--info-bd);color:var(--info-tx);padding:6px 14px;border-radius:var(--rs);cursor:pointer;font-size:12px;font-family:inherit}
 .conf-btn:disabled{opacity:.5;cursor:default}
+.prefill-box{background:var(--ok-bg);border:0.5px solid var(--ok-bd);border-left:3px solid var(--ok-tx);border-radius:var(--rs);padding:8px 12px;font-size:12px;margin:8px 0;color:var(--text);line-height:1.5}
+.prefill-box .pf-label{font-size:10px;color:var(--text2);margin-bottom:3px}
+.pf-actions{display:flex;gap:8px;margin-top:8px;align-items:center}
 .ti-wrap{display:flex;gap:6px;margin-top:7px}
 .ti{flex:1;background:var(--bg);border:0.5px solid var(--border2);color:var(--text);padding:8px 12px;border-radius:var(--rs);font-size:13px;font-family:inherit;outline:none}
 .ti:focus{border-color:var(--info-tx)}
@@ -139,7 +142,7 @@ const Qs = [
     choices:['手順書あり・訓練済・体制点検済','手順書あり','口頭ルールのみ','なし'] },
 ];
 
-const st = { phase:'auth', tenantId:null, company:null, answers:{}, q:0, multi:[], uploadedRegs:[] };
+const st = { phase:'auth', tenantId:null, company:null, answers:{}, q:0, multi:[], uploadedRegs:[], prefills:{} };
 const chat = document.getElementById('chat');
 const prog = document.getElementById('prog');
 const hdrSub = document.getElementById('hdr-sub');
@@ -214,6 +217,7 @@ async function startAuth(){
       hideTyping();
       st.tenantId=tidParam; st.company=data.company;
       st.uploadedRegs=data.analyzed_regulations||[];
+      st.prefills=data.hearing_prefills||{};
       st.phase='questions'; setProg();
       const c=st.company;
       const regsHtml=st.uploadedRegs.length>0
@@ -255,6 +259,7 @@ async function startAuth(){
       hideTyping();
       st.tenantId=tid; st.company=data.company;
       st.uploadedRegs=data.analyzed_regulations||[];
+      st.prefills=data.hearing_prefills||{};
       st.phase='questions'; setProg();
       const c=st.company;
       const regsHtml=st.uploadedRegs.length>0
@@ -277,6 +282,35 @@ async function startAuth(){
 async function askQ(){
   if(st.q>=Qs.length){ showSummary(); return; }
   const q=Qs[st.q]; setProg();
+  const prefill = (st.prefills||{})[q.id];
+
+  if(prefill && q.type==='single'){
+    // 確認モード: 規程解析からの推奨回答を提示
+    const ch=q.choices.map((c,i)=>`<button class="c-btn" data-v="${c}"><span class="num">${i+1}</span>${c}</button>`).join('')
+      +`<button class="c-btn ask" id="ask-btn-${q.id}"><span class="num">?</span>わからない・質問する</button>`;
+    await aiMsg(
+      `<div class="qno">Q${st.q+1}/${Qs.length}</div>${q.text}<div class="hint">${q.hint}</div>`+
+      `<div class="prefill-box"><div class="pf-label">📋 規程解析から判定</div><strong>${prefill}</strong></div>`+
+      `<div class="pf-actions">`+
+        `<button class="conf-btn" id="pf-ok-${q.id}">この判定で進む →</button>`+
+        `<button class="c-btn" id="pf-edit-${q.id}" style="margin:0;font-size:11px;padding:5px 10px"><span class="num">✎</span>自分で選ぶ</button>`+
+      `</div>`+
+      `<div id="pf-choices-${q.id}" style="display:none"><div class="choices" id="c-${q.id}">${ch}</div></div>`,
+    450);
+    document.getElementById(`pf-ok-${q.id}`).addEventListener('click',()=>{
+      document.getElementById(`pf-ok-${q.id}`).disabled=true;
+      document.getElementById(`pf-edit-${q.id}`).disabled=true;
+      st.answers[q.id]=prefill; addMsg('u',`（規程判定）${prefill}`); st.q++; setTimeout(askQ,300);
+    });
+    document.getElementById(`pf-edit-${q.id}`).addEventListener('click',()=>{
+      document.getElementById(`pf-ok-${q.id}`).style.display='none';
+      document.getElementById(`pf-edit-${q.id}`).style.display='none';
+      document.getElementById(`pf-choices-${q.id}`).style.display='block';
+      bindSingle(q); bindAsk(q);
+    });
+    return;
+  }
+
   if(q.type==='single'){
     const ch=q.choices.map((c,i)=>`<button class="c-btn" data-v="${c}"><span class="num">${i+1}</span>${c}</button>`).join('')
       +`<button class="c-btn ask" id="ask-btn-${q.id}"><span class="num">?</span>わからない・質問する</button>`;
