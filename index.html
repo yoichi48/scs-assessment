@@ -122,21 +122,21 @@ body{font-family:-apple-system,'Hiragino Sans','Yu Gothic UI',sans-serif;backgro
 const CF = 'https://asia-northeast1-scs-star3-service.cloudfunctions.net';
 const Qs = [
   { id:'B3_1', text:'情報セキュリティに関する社内ルールはどの程度整備されていますか？', hint:'💡 参照規程: POL-001 / GOV-001', type:'single',
-    choices:['文書化・定期見直し・全員周知済み','文書化・周知のみ','口頭ルールのみ','なし'] },
+    choices:['文書化・定期的に見直し・全員周知','文書化・周知のみ','口頭ルールのみ','なし'] },
   { id:'B3_2', text:'情報セキュリティ対応方針の策定・周知状況はいかがですか？', hint:'💡 参照規程: POL-001 情報セキュリティ対応方針', type:'single',
-    choices:['制定・全員周知・参照可能','制定のみ','なし'] },
+    choices:['制定・全員周知・参照可能な状態','制定のみ','なし'] },
   { id:'B3_4', text:'経営層によるセキュリティへの関与はどの程度ありますか？', hint:'💡 参照規程: GOV-001 推進体制規程', type:'single',
     choices:['仕組みあり・定期実施','必要時のみ','なし'] },
-  { id:'cloud', text:'現在利用中のクラウドサービスを選択してください（複数選択可）', hint:'💡 参照規程: ISM-001 情報資産管理規程', type:'multi',
-    choices:['Microsoft 365 / Teams','Google Workspace','AWS / Azure / GCP','Salesforce / kintone等','利用していない'] },
+  { id:'B1_9', text:'現在利用中のクラウドサービスを選択してください（複数選択可）', hint:'💡 参照規程: AST-001 情報資産管理規程', type:'multi',
+    choices:['Microsoft 365 / Teams','Google Workspace','AWS / Azure / GCP','Salesforce / kintone等','利用なし'] },
   { id:'B3_17', text:'ID（アカウント）の申請・承認プロセスはどのように管理されていますか？', hint:'💡 参照規程: ACC-001 アクセス権管理規程', type:'single',
-    choices:['申請・承認プロセスあり・記録保管','管理者判断で付与','プロセスなし'] },
+    choices:['申請・承認プロセスあり・記録','管理者判断で付与','プロセスなし'] },
   { id:'B3_21', text:'多要素認証（MFA）を導入しているシステムを選択してください（複数選択可）', hint:'💡 参照規程: ACC-001 アクセス権管理規程', type:'multi',
-    choices:['VPN・リモートアクセス','社内基幹システム','クラウドサービス（M365等）','導入していない'] },
-  { id:'B3_28', text:'従業員向けセキュリティ教育・訓練はどの程度実施していますか？', hint:'💡 参照規程: EDU-001 セキュリティ教育規程', type:'single',
-    choices:['年1回以上・全員・記録あり','不定期実施','未実施'] },
-  { id:'B3_36', text:'インシデント対応手順の整備状況はいかがですか？', hint:'💡 参照規程: INC-001 インシデント対応規程', type:'single',
-    choices:['手順書あり・訓練実施・記録','手順書のみ','未整備'] },
+    choices:['VPN・リモートアクセス','社内基幹システム','クラウドサービス（Microsoft365等）','未導入'] },
+  { id:'B3_28', text:'従業員向けセキュリティ教育・訓練はどの程度実施していますか？', hint:'💡 参照規程: TRN-001 セキュリティ教育・訓練規程', type:'single',
+    choices:['年1回以上・記録保管・内容点検あり','年1回以上・記録のみ','不定期','なし'] },
+  { id:'B3_40', text:'インシデント対応手順の整備状況はいかがですか？', hint:'💡 参照規程: INC-001 インシデント対応手順書', type:'single',
+    choices:['手順書あり・訓練済・体制点検済','手順書あり','口頭ルールのみ','なし'] },
 ];
 
 const st = { phase:'auth', tenantId:null, company:null, answers:{}, q:0, multi:[], uploadedRegs:[] };
