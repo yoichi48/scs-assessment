@@ -104,7 +104,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans",san
         <strong>ご注意ください</strong><br>
         ・<strong>スキャンしたPDF（画像PDF）はアップロードできません。</strong>Wordで作成した規程をPDF保存したもの、またはそのまま.docxファイルでアップロードしてください<br>
         ・スキャンPDFしかない場合は、担当アドバイザーにご相談ください<br>
-        ・ファイルサイズは5MB以下、目安として20ページ以内を推奨します<br>
+        ・ファイルサイズは20MB以下、目安として20ページ以内を推奨します<br>
         ・ページ数の多い規程は章ごとに分割するとより精度が高まります<br>
         ・解析には3〜10分かかります。完了までそのままお待ちください
       </div>
@@ -249,8 +249,8 @@ document.getElementById('reg-file').addEventListener('change', e => {
   const dispEl = document.getElementById('file-name-disp');
   const uploadBtn = document.getElementById('upload-btn');
   if (!f) return;
-  if (f.size > 5 * 1024 * 1024) {
-    dispEl.textContent = '⚠ 5MBを超えています。章ごとに分割してアップロードしてください。';
+  if (f.size > 20 * 1024 * 1024) {
+    dispEl.textContent = '⚠ 20MBを超えています。章ごとに分割してアップロードしてください。';
     dispEl.style.color = '#dc2626';
     uploadBtn.disabled = true;
     return;
