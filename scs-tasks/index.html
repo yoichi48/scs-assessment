@@ -296,9 +296,10 @@ async function registerTasks() {
       name: t.name,
       group: t.group || 'その他',
       priority: t.priority || '中',
-      duration_days: t.duration_days || 7,  
+      duration_days: t.duration_days || 7,
       description: t.description || '',
       related_criteria: t.related_criteria || [],
+      resources: t.resources || [],
       assignee: '',
     });
   });
