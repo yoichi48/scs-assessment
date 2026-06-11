@@ -94,6 +94,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino San
 
   <div class="footer">
     SCS★3 取得支援コンサルティングサービス
+    <div id="editor-link-wrap" style="margin-top:10px; display:none;">
+      <a id="editor-link" href="#" style="color:#64748b; font-size:12px; text-decoration:underline;">
+        専門家の方：総評・サマリを編集する →
+      </a>
+    </div>
   </div>
 </div>
 
@@ -239,6 +244,13 @@ document.addEventListener('keydown', e => {
       if (emailGroup) emailGroup.style.display = 'none';
     }
     window._tok = tok; window._exp = exp;
+  }
+  // 専門家向け：トークンリンクで開かれている場合のみ、編集画面への導線を出す（認証情報を引き継ぐ）
+  if (tid && tok && exp) {
+    const q = `?t=${encodeURIComponent(tid)}&tok=${encodeURIComponent(tok)}&exp=${encodeURIComponent(exp)}`;
+    const link = document.getElementById('editor-link');
+    const wrap = document.getElementById('editor-link-wrap');
+    if (link && wrap) { link.href = 'editor.html' + q; wrap.style.display = 'block'; }
   }
 })();
 </script>
