@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCS★3 レポート編集（専門家用）</title>
+<style>
+:root {
+  --bg: #f7f8fa; --card: #fff; --primary: #1A2F81; --primary-hover: #111F54;
+  --teal: #086B89; --text1: #16213E; --text2: #64748b; --border: #e2e8f0;
+  --success: #16a34a; --error: #dc2626; --warn: #f59e0b;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  background: var(--bg); color: var(--text1); height:100vh; overflow:hidden; }
+
+/* ===== ログインゲート ===== */
+.gate { height:100vh; display:flex; justify-content:center; align-items:center; }
+.gate .box { width:100%; max-width:420px; background:var(--card); border-radius:16px; padding:32px 28px;
+  box-shadow:0 1px 3px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04); }
+.gate h1 { font-size:18px; color:var(--primary); margin-bottom:4px; }
+.gate p.sub { font-size:13px; color:var(--text2); margin-bottom:20px; }
+.fg { margin-bottom:14px; }
+.fg label { display:block; font-size:13px; font-weight:600; color:var(--text2); margin-bottom:6px; }
+.fg input { width:100%; padding:10px 14px; border:1px solid var(--border); border-radius:8px; font-size:15px; outline:none; }
+.fg input:focus { border-color:var(--primary); }
+
+/* ===== エディタ本体 ===== */
+.editor { display:none; height:100vh; grid-template-columns:420px 1fr; }
+.editor.show { display:grid; }
+
+.panel { background:var(--card); border-right:1px solid var(--border); display:flex; flex-direction:column; height:100vh; }
+.panel header { padding:16px 20px; border-bottom:1px solid var(--border); }
+.panel header h1 { font-size:16px; color:var(--primary); }
+.panel header .comp { font-size:12px; color:var(--text2); margin-top:3px; }
+.panel .scroll { flex:1; overflow-y:auto; padding:18px 20px; }
+
+.block { margin-bottom:22px; }
+.block > .blabel { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:var(--text1); margin-bottom:8px; }
+.block > .blabel .tag { font-size:10px; font-weight:700; color:#fff; background:var(--teal); padding:2px 7px; border-radius:10px; }
+.block .hint { font-size:11px; color:var(--text2); margin-bottom:8px; line-height:1.5; }
+
+textarea#overall { width:100%; min-height:150px; padding:10px 12px; border:1px solid var(--border); border-radius:8px;
+  font-size:13px; line-height:1.7; resize:vertical; font-family:inherit; outline:none; }
+textarea#overall:focus { border-color:var(--primary); }
+
+.list .row { display:flex; gap:6px; margin-bottom:6px; }
+.list .row input { flex:1; padding:8px 10px; border:1px solid var(--border); border-radius:7px; font-size:12.5px; outline:none; font-family:inherit; }
+.list .row input:focus { border-color:var(--primary); }
+.list .row button { flex:none; width:32px; border:1px solid var(--border); background:#fff; border-radius:7px; cursor:pointer; color:var(--text2); font-size:16px; line-height:1; }
+.list .row button:hover { background:#f1f5f9; color:var(--error); }
+.list .add { margin-top:2px; border:1px dashed var(--border); background:#fff; border-radius:7px; padding:7px; width:100%;
+  cursor:pointer; color:var(--teal); font-size:12px; font-weight:600; }
+.list .add:hover { background:#f0f9ff; }
+
+.panel footer { padding:14px 20px; border-top:1px solid var(--border); background:#fff; }
+.btn { width:100%; padding:11px; border:none; border-radius:9px; font-size:14px; font-weight:700; cursor:pointer; transition:all .15s; }
+.btn + .btn { margin-top:8px; }
+.btn-primary { background:var(--primary); color:#fff; }
+.btn-primary:hover { background:var(--primary-hover); }
+.btn-teal { background:var(--teal); color:#fff; }
+.btn-teal:hover { filter:brightness(.92); }
+.btn-ghost { background:#fff; color:var(--primary); border:1px solid var(--primary); }
+.btn-ghost:hover { background:#f0f4ff; }
+.btn:disabled { opacity:.55; cursor:not-allowed; }
+
+.toast { margin-top:10px; padding:9px 12px; border-radius:8px; font-size:12.5px; line-height:1.5; display:none; }
+.toast.info { background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; display:block; }
+.toast.ok { background:#f0fdf4; color:var(--success); border:1px solid #bbf7d0; display:block; }
+.toast.err { background:#fef2f2; color:var(--error); border:1px solid #fecaca; display:block; }
+.toast a { color:inherit; font-weight:700; }
+
+/* ===== プレビュー ===== */
+.preview { position:relative; background:#525659; height:100vh; }
+.preview embed, .preview iframe { width:100%; height:100%; border:none; }
+.preview .empty { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#cbd5e1; font-size:14px; }
+.preview .spinner { position:absolute; inset:0; display:none; align-items:center; justify-content:center;
+  background:rgba(82,86,89,.7); color:#fff; font-size:14px; flex-direction:column; gap:14px; z-index:5; }
+.preview .spinner.show { display:flex; }
+.preview .spinner .ring { width:34px; height:34px; border:3px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation:spin .8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- ログインゲート -->
+<div class="gate" id="gate">
+  <div class="box">
+    <h1>📝 SCS★3 レポート編集</h1>
+    <p class="sub">専門家がレポート確定前に総評・サマリ文言を微修正します。</p>
+    <div class="fg">
+      <label for="g-tenant">会員番号（テナントID）</label>
+      <input type="text" id="g-tenant" placeholder="例: 503749" autocomplete="off">
+    </div>
+    <div class="fg" id="g-email-group">
+      <label for="g-email">メールアドレス</label>
+      <input type="email" id="g-email" placeholder="登録メールアドレス" autocomplete="email">
+    </div>
+    <button class="btn btn-primary" id="g-btn" onclick="enter()">編集を開始する</button>
+    <div class="toast" id="g-toast"></div>
+  </div>
+</div>
+
+<!-- エディタ本体 -->
+<div class="editor" id="editor">
+  <div class="panel">
+    <header>
+      <h1>レポート微修正</h1>
+      <div class="comp" id="comp-name">—</div>
+    </header>
+    <div class="scroll">
+      <div class="block">
+        <div class="blabel">総合評価コメント <span class="tag">総評</span></div>
+        <div class="hint">AI生成の総評ドラフトです。クライアントへの伴走の言い回しなどを整えてください。</div>
+        <textarea id="overall" placeholder="総評コメント"></textarea>
+      </div>
+
+      <div class="block">
+        <div class="blabel">重大ギャップ（最優先）</div>
+        <div class="hint">評価サマリ下部に表示される最大4件。空欄は出力されません。</div>
+        <div class="list" id="gap-list"></div>
+        <button class="add" onclick="addRow('gap-list')">＋ 行を追加</button>
+      </div>
+
+      <div class="block">
+        <div class="blabel">推奨アクション（優先順）</div>
+        <div class="hint">評価サマリ下部に表示される最大4件。上から順に番号が振られます。</div>
+        <div class="list" id="act-list"></div>
+        <button class="add" onclick="addRow('act-list')">＋ 行を追加</button>
+      </div>
+    </div>
+    <footer>
+      <button class="btn btn-ghost" id="btn-preview" onclick="doPreview()">プレビュー更新</button>
+      <button class="btn btn-teal" id="btn-save" onclick="doSave()">保存（次回PDFに反映）</button>
+      <button class="btn btn-primary" id="btn-finalize" onclick="doFinalize()">保存して確定PDFを生成</button>
+      <div class="toast" id="toast"></div>
+    </footer>
+  </div>
+  <div class="preview">
+    <div class="empty" id="pv-empty">プレビューを読み込み中…</div>
+    <div class="spinner" id="pv-spinner"><div class="ring"></div><span id="pv-spinner-text">生成中…</span></div>
+    <embed id="pv-embed" type="application/pdf" style="display:none">
+  </div>
+</div>
+
+<script>
+const CF = 'https://asia-northeast1-scs-star3-service.cloudfunctions.net';
+let AUTH = {};      // { tenant_id, email } または { tenant_id, tok, exp }
+let LAST_PDF_URL = null;
+
+// ---- 共通: 認証ペイロード ----
+function authPayload(extra) {
+  return Object.assign({}, AUTH, extra || {});
+}
+
+// ---- トースト ----
+function toast(id, type, html) {
+  const el = document.getElementById(id);
+  el.className = 'toast ' + type;
+  el.innerHTML = html;
+}
+function clearToast(id) { document.getElementById(id).className = 'toast'; }
+
+// ---- 行UI ----
+function addRow(listId, value) {
+  const list = document.getElementById(listId);
+  const row = document.createElement('div');
+  row.className = 'row';
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = value || '';
+  input.placeholder = listId === 'gap-list' ? '例: アクセス制御：未達成3件' : '例: 特権ID管理の整備';
+  const btn = document.createElement('button');
+  btn.type = 'button'; btn.textContent = '×'; btn.title = '削除';
+  btn.onclick = () => row.remove();
+  row.appendChild(input); row.appendChild(btn);
+  list.appendChild(row);
+}
+function setRows(listId, items) {
+  const list = document.getElementById(listId);
+  list.innerHTML = '';
+  (items && items.length ? items : ['']).forEach(v => addRow(listId, v));
+}
+function getRows(listId) {
+  return Array.from(document.querySelectorAll('#' + listId + ' input'))
+    .map(i => i.value.trim()).filter(v => v.length > 0);
+}
+
+// ---- フォーム → overlay ----
+function buildOverlay() {
+  return {
+    overallComment: document.getElementById('overall').value,
+    gapItems: getRows('gap-list'),
+    actionItems: getRows('act-list'),
+  };
+}
+
+// ---- editable → フォーム ----
+function fillForm(editable, companyName) {
+  document.getElementById('overall').value = editable.overallComment || '';
+  setRows('gap-list', editable.gapItems || []);
+  setRows('act-list', editable.actionItems || []);
+  if (companyName) document.getElementById('comp-name').textContent = companyName;
+}
+
+// ---- PDF描画 ----
+function renderPdf(b64) {
+  if (LAST_PDF_URL) { URL.revokeObjectURL(LAST_PDF_URL); LAST_PDF_URL = null; }
+  const bytes = atob(b64);
+  const arr = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+  const blob = new Blob([arr], { type: 'application/pdf' });
+  LAST_PDF_URL = URL.createObjectURL(blob);
+  const embed = document.getElementById('pv-embed');
+  embed.src = LAST_PDF_URL;
+  embed.style.display = 'block';
+  document.getElementById('pv-empty').style.display = 'none';
+}
+
+function spinner(on, text) {
+  const sp = document.getElementById('pv-spinner');
+  if (text) document.getElementById('pv-spinner-text').textContent = text;
+  sp.classList.toggle('show', !!on);
+}
+function busy(on) {
+  ['btn-preview', 'btn-save', 'btn-finalize'].forEach(id => { document.getElementById(id).disabled = on; });
+}
+
+// ---- reportPreview 呼び出し ----
+async function callPreview(overlay, save) {
+  const resp = await fetch(CF + '/reportPreview', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(authPayload({ overlay, save })),
+  });
+  const data = await resp.json();
+  if (!resp.ok || !data.ok) {
+    const e = new Error(data.error || 'リクエストに失敗しました');
+    e.status = resp.status;
+    throw e;
+  }
+  return data;
+}
+
+// ---- 初期ロード ----
+async function enter() {
+  const tenant = document.getElementById('g-tenant').value.trim();
+  if (!tenant) { toast('g-toast', 'err', '会員番号を入力してください。'); return; }
+  if (!AUTH.tok) {
+    const email = document.getElementById('g-email').value.trim();
+    if (!email) { toast('g-toast', 'err', 'メールアドレスを入力してください。'); return; }
+    AUTH = { tenant_id: tenant, email };
+  } else {
+    AUTH.tenant_id = tenant;
+  }
+
+  document.getElementById('g-btn').disabled = true;
+  toast('g-toast', 'info', '読み込み中…');
+  try {
+    const data = await callPreview(undefined, false);  // overlay未指定=load
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('editor').classList.add('show');
+    fillForm(data.editable, data.company && data.company.company_name);
+    renderPdf(data.pdf_base64);
+  } catch (e) {
+    document.getElementById('g-btn').disabled = false;
+    if (e.status === 401) toast('g-toast', 'err', '会員番号またはメールアドレスが正しくありません。');
+    else if (e.status === 403) toast('g-toast', 'err', e.message);
+    else toast('g-toast', 'err', 'エラー: ' + e.message);
+  }
+}
+
+// ---- プレビュー更新 ----
+async function doPreview() {
+  busy(true); spinner(true, 'プレビュー生成中…'); clearToast('toast');
+  try {
+    const data = await callPreview(buildOverlay(), false);
+    renderPdf(data.pdf_base64);
+    fillForm(data.editable, null);
+    toast('toast', 'ok', 'プレビューを更新しました。');
+  } catch (e) {
+    toast('toast', 'err', 'エラー: ' + e.message);
+  } finally { busy(false); spinner(false); }
+}
+
+// ---- 保存 ----
+async function doSave() {
+  busy(true); spinner(true, '保存＆プレビュー生成中…'); clearToast('toast');
+  try {
+    const data = await callPreview(buildOverlay(), true);
+    renderPdf(data.pdf_base64);
+    toast('toast', 'ok', '保存しました。次回のレポート生成に反映されます。');
+  } catch (e) {
+    toast('toast', 'err', 'エラー: ' + e.message);
+  } finally { busy(false); spinner(false); }
+}
+
+// ---- 保存して確定PDFを生成（GCSに正式保存） ----
+async function doFinalize() {
+  busy(true); spinner(true, '保存中…'); clearToast('toast');
+  try {
+    await callPreview(buildOverlay(), true);  // overlayをGCSへ保存
+    spinner(true, '確定PDFを生成中…');
+    const resp = await fetch(CF + '/generateReport', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(authPayload()),
+    });
+    const data = await resp.json();
+    if (!resp.ok || !data.ok) throw new Error(data.error || 'レポート生成に失敗しました');
+    toast('toast', 'ok', '確定しました。<a href="' + data.report_url + '" target="_blank">📥 確定PDFを開く</a>');
+  } catch (e) {
+    toast('toast', 'err', 'エラー: ' + e.message);
+  } finally { busy(false); spinner(false); }
+}
+
+// ---- URLパラメータ（?t=&tok=&exp=）で自動認証 ----
+(function () {
+  const p = new URLSearchParams(location.search);
+  const t = p.get('t'), tok = p.get('tok'), exp = p.get('exp');
+  if (t) document.getElementById('g-tenant').value = t;
+  if (tok && exp) {
+    AUTH = { tok, exp };
+    const eg = document.getElementById('g-email-group');
+    if (eg) eg.style.display = 'none';
+    if (t) { enter(); }  // テナントもあれば自動で開始
+  }
+})();
+</script>
+</body>
+</html>
