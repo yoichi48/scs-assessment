@@ -40,9 +40,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino San
 .block > .blabel .tag { font-size:10px; font-weight:700; color:#fff; background:var(--teal); padding:2px 7px; border-radius:10px; }
 .block .hint { font-size:11px; color:var(--text2); margin-bottom:8px; line-height:1.5; }
 
-textarea#overall { width:100%; min-height:150px; padding:10px 12px; border:1px solid var(--border); border-radius:8px;
+.panel textarea { width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px;
   font-size:13px; line-height:1.7; resize:vertical; font-family:inherit; outline:none; }
-textarea#overall:focus { border-color:var(--primary); }
+textarea#overall { min-height:150px; }
+textarea#annot-org, textarea#annot-net { min-height:80px; }
+.panel textarea:focus { border-color:var(--primary); }
 
 .list .row { display:flex; gap:6px; margin-bottom:6px; }
 .list .row input { flex:1; padding:8px 10px; border:1px solid var(--border); border-radius:7px; font-size:12.5px; outline:none; font-family:inherit; }
@@ -128,6 +130,18 @@ textarea#overall:focus { border-color:var(--primary); }
         <div class="list" id="act-list"></div>
         <button class="add" onclick="addRow('act-list')">＋ 行を追加</button>
       </div>
+
+      <div class="block">
+        <div class="blabel">組織図への注釈 <span class="tag">体制図</span></div>
+        <div class="hint">体制図ページ下部に補足コメントとして表示されます。空欄なら表示されません。改行可。</div>
+        <textarea id="annot-org" placeholder="例: CISOは情報システム部長が兼任。2026年7月に専任化予定。"></textarea>
+      </div>
+
+      <div class="block">
+        <div class="blabel">ネットワーク図への注釈 <span class="tag">NW構成</span></div>
+        <div class="hint">ネットワーク構成ページ下部に補足コメントとして表示されます。空欄なら表示されません。改行可。</div>
+        <textarea id="annot-net" placeholder="例: VPN接続は本社のみ。支店からのリモートアクセスは検証中で未反映。"></textarea>
+      </div>
     </div>
     <footer>
       <button class="btn btn-ghost" id="btn-preview" onclick="doPreview()">プレビュー更新</button>
@@ -192,6 +206,10 @@ function buildOverlay() {
     overallComment: document.getElementById('overall').value,
     gapItems: getRows('gap-list'),
     actionItems: getRows('act-list'),
+    annotations: {
+      orgChart: document.getElementById('annot-org').value,
+      network: document.getElementById('annot-net').value,
+    },
   };
 }
 
@@ -200,6 +218,9 @@ function fillForm(editable, companyName) {
   document.getElementById('overall').value = editable.overallComment || '';
   setRows('gap-list', editable.gapItems || []);
   setRows('act-list', editable.actionItems || []);
+  const annot = editable.annotations || {};
+  document.getElementById('annot-org').value = annot.orgChart || '';
+  document.getElementById('annot-net').value = annot.network || '';
   if (companyName) document.getElementById('comp-name').textContent = companyName;
 }
 
