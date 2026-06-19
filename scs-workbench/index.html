@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>専門家統合ワークベンチ — SCS★3</title>
+<style>
+  :root{
+    --ink:#1f2933; --sub:#6b7785; --line:#e3e8ee; --bg:#f5f7fa; --card:#fff;
+    --teal:#0f9b8e; --amber:#d98a00; --red:#d64545; --blue:#2f6fbf; --chip:#eef2f6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;
+    color:var(--ink);background:var(--bg);line-height:1.6;font-size:14px}
+  .top{background:#13343b;color:#fff;padding:12px 20px;display:flex;align-items:center;gap:12px}
+  .top h1{font-size:16px;margin:0;font-weight:600}
+  .top .muted{color:#9fc6c0;font-size:12px}
+  .wrap{max-width:1280px;margin:0 auto;padding:18px 20px 100px}
+  h2{font-size:15px;margin:24px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--line)}
+  .muted{color:var(--sub)} .small{font-size:12px}
+  button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--line);background:#fff;padding:7px 14px}
+  button.primary{background:var(--teal);color:#fff;border-color:var(--teal);font-weight:600}
+  button.primary:disabled{opacity:.5;cursor:default}
+  textarea{width:100%;font:inherit;border:1px solid var(--line);border-radius:8px;padding:10px;resize:vertical}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .grid{display:grid;grid-template-columns:1fr 380px;gap:18px;align-items:start}
+  @media(max-width:980px){.grid{grid-template-columns:1fr}}
+  .kv{margin:5px 0} .kv b{display:inline-block;min-width:78px;color:var(--sub);font-weight:600}
+  .assets{display:flex;flex-wrap:wrap;gap:6px;margin-top:3px}
+  .chip{background:var(--chip);border-radius:999px;padding:2px 10px;font-size:12px}
+  .qcard{background:var(--card);border:1px solid var(--line);border-left-width:4px;border-radius:10px;padding:14px 16px;margin-bottom:10px}
+  .qcard.t-na_check{border-left-color:var(--blue)} .qcard.t-actual_check{border-left-color:var(--amber)}
+  .qhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+  .badge{font-size:11px;font-weight:700;border-radius:6px;padding:2px 8px;color:#fff}
+  .b-na_check{background:var(--blue)} .b-actual_check{background:var(--amber)}
+  .src{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:1px 7px;color:var(--sub)}
+  .conf{font-size:11px;font-weight:700}
+  .conf.high{color:var(--teal)} .conf.mid{color:var(--amber)} .conf.low{color:var(--red)}
+  .qtext{font-size:15px;font-weight:600;margin:2px 0 6px}
+  .meta{font-size:12.5px;color:var(--sub);margin:2px 0} .meta b{color:var(--ink);font-weight:600}
+  .crit{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0}
+  .crit .chip{background:#eaf1f8;color:#2c5a8c}
+  .ans{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:6px}
+  .ans button{border:none;border-radius:0;border-right:1px solid var(--line);padding:5px 14px;background:#fff}
+  .ans button:last-child{border-right:none}
+  .ans button.on-yes{background:var(--teal);color:#fff}
+  .ans button.on-no{background:#6b7785;color:#fff}
+  .ans button.on-unknown{background:#c9ad3a;color:#fff}
+  .openans{margin-top:8px;background:#fbfcfd;border:1px dashed var(--line);border-radius:8px;padding:8px 10px}
+  .optchips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px}
+  .optchip{font-size:12px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:2px 10px}
+  .optchip:hover{background:var(--chip)}
+  .opentext{width:100%;font:inherit;border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+  .preview{font-size:12px;margin-top:8px;color:var(--sub)}
+  .preview .act{display:inline-block;font-weight:700;font-size:11px;border-radius:5px;padding:0 6px;margin:0 3px}
+  .act.NA{background:#e7f4f2;color:var(--teal)} .act.達成{background:#eaf1f8;color:var(--blue)}
+  .act.要評価{background:#fdf2e0;color:var(--amber)} .act.不明{background:#eef2f6;color:var(--sub)}
+  .sticky{position:sticky;top:14px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{color:var(--sub);font-weight:600}
+  select{font:inherit;border:1px solid var(--line);border-radius:6px;padding:2px 4px;font-size:12px}
+  .st{font-weight:700;border-radius:5px;padding:1px 7px;font-size:11px}
+  .st.達成{background:#eaf1f8;color:var(--blue)} .st.一部達成{background:#fff5e0;color:#b07400}
+  .st.未達成{background:#fdeaea;color:var(--red)} .st.NA{background:#e7f4f2;color:var(--teal)}
+  .st.不明{background:#eef2f6;color:var(--sub)} .st.要評価{background:#fdf2e0;color:var(--amber)}
+  .counts{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px}
+  .counts span{font-size:12px;background:#fff;border:1px solid var(--line);border-radius:6px;padding:2px 8px}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid #cdd6df;border-top-color:var(--teal);border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .note{background:#fff8e6;border:1px solid #f0e2bd;border-radius:8px;padding:8px 12px;font-size:12px;color:#7a6a3a;margin:8px 0}
+  .savebar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);padding:10px 20px;display:flex;justify-content:flex-end;gap:10px;align-items:center}
+  .err-banner{background:#fdeaea;border:1px solid #f5c6c6;border-radius:8px;padding:10px 14px;color:var(--red);margin:8px 0}
+</style>
+</head>
+<body>
+<div class="top">
+  <h1>専門家統合ワークベンチ</h1>
+  <span class="muted" id="topSub">SCS★3 第0層プロファイリング</span>
+</div>
+
+<div class="wrap">
+
+  <div id="authErr" class="err-banner" style="display:none">
+    ⚠ 認証エラー: URLにトークン（?t=&tok=&exp=）が含まれているか確認してください。
+  </div>
+
+  <!-- ① 入力 -->
+  <div class="panel">
+    <div class="row" style="justify-content:space-between">
+      <strong>① 面談記録を貼り付け</strong>
+      <div class="row">
+        <button onclick="loadExisting()">前回の結果を読込</button>
+        <button class="primary" id="genBtn" onclick="generate()">台本を生成</button>
+      </div>
+    </div>
+    <textarea id="interview" rows="6" placeholder="Zendesk面談記録テキストを貼り付け…（数万文字でも可）" style="margin-top:10px" oninput="updateCount()"></textarea>
+    <div id="count" class="small muted" style="margin-top:4px">0字</div>
+    <details style="margin-top:8px"><summary class="small muted">HP抜粋（任意）</summary>
+      <textarea id="hp" rows="3" placeholder="クライアントHPの抜粋（任意）"></textarea>
+    </details>
+    <div id="status" class="small muted" style="margin-top:8px"></div>
+  </div>
+
+  <div id="result" style="display:none">
+    <div class="panel" id="profileCard"></div>
+
+    <div class="note">第0層は達成状況を断定しません。確認質問に Yes/No/不明 を記録すると、<b>on_yes/on_no の分岐どおり右の達成状況が自動で埋まります</b>。最終値は専門家が上書きできます。</div>
+
+    <div class="grid">
+      <div>
+        <h2>② ヒアリング台本 <span class="muted small" id="qcount"></span></h2>
+        <div id="cards"></div>
+      </div>
+      <div class="sticky">
+        <h2>③ 達成状況（自動算出）</h2>
+        <div class="counts" id="counts"></div>
+        <div class="panel" style="padding:8px;max-height:70vh;overflow:auto">
+          <table id="summary"><thead><tr><th>基準</th><th>状況</th><th>上書き</th></tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="savebar" id="savebar" style="display:none">
+  <span class="small muted" id="saveMsg"></span>
+  <button class="primary" onclick="saveDecisions()">④ 決定を保存（Notionへ書き戻し）</button>
+</div>
+
+<script>
+const CF = 'https://asia-northeast1-scs-star3-service.cloudfunctions.net';
+const LEVELS = ['達成','一部達成','未達成','N/A','不明','要評価'];
+const RANK = {'達成':5,'N/A':4,'一部達成':3,'未達成':3,'要評価':2,'不明':1};
+
+// URLパラメータから認証情報を取得
+const _params = new URLSearchParams(location.search);
+const TENANT_ID = _params.get('t') || '';
+const TOK       = _params.get('tok') || '';
+const EXP       = _params.get('exp') || '';
+
+let PROFILE = null;
+const ANSWERS  = {};
+const TEXT     = {};
+const OVERRIDES = {};
+
+// 認証チェック
+if (!TENANT_ID || !TOK || !EXP) {
+  document.getElementById('authErr').style.display = '';
+} else {
+  document.getElementById('topSub').textContent = `テナント: ${TENANT_ID}`;
+}
+
+function auth() { return { tenant_id: TENANT_ID, tok: TOK, exp: EXP }; }
+
+function actionToStatus(a){ return {na:'N/A',achieved:'達成',evaluate:'要評価'}[a] || '不明'; }
+function stClass(s){ return s==='N/A'?'NA':s; }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+async function cfPost(endpoint, body, timeoutMs = 120000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const r = await fetch(`${CF}/${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...auth(), ...body }),
+      signal: ctrl.signal,
+    });
+    clearTimeout(t);
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || 'APIエラー');
+    return j;
+  } catch(e) {
+    clearTimeout(t);
+    if (e.name === 'AbortError') throw new Error('タイムアウトしました。再度お試しください。');
+    throw e;
+  }
+}
+
+async function generate() {
+  const interviewText = document.getElementById('interview').value.trim();
+  const hpText = document.getElementById('hp').value.trim();
+  if (!interviewText) { setStatus('面談記録を貼り付けてください', true); return; }
+  if (!TENANT_ID) { setStatus('URLにテナントIDとトークンが必要です', true); return; }
+  toggleGen(true, '台本を生成中…（業種マッチング＋プロファイル生成で30〜90秒かかります）');
+  try {
+    const j = await cfPost('buildProfile', { interview_text: interviewText, hp_text: hpText }, 180000);
+    PROFILE = {
+      profile_card: j.profile_card,
+      gyoshu_match: j.gyoshu_match,
+      hearing_script: j.hearing_script || [],
+      checklist_annotations: j.checklist_annotations || [],
+    };
+    [ANSWERS, TEXT, OVERRIDES].forEach(m => Object.keys(m).forEach(k => delete m[k]));
+    render();
+    const notionMsg = j.notion_written > 0 ? ` Notion注釈${j.notion_written}件書込済` : '';
+    setStatus(`生成しました（台本${PROFILE.hearing_script.length}問）。回答を記録してください。${notionMsg}`);
+  } catch(e) {
+    setStatus('エラー: ' + e.message, true);
+  } finally {
+    toggleGen(false);
+  }
+}
+
+async function loadExisting() {
+  if (!TENANT_ID) { setStatus('URLにテナントIDとトークンが必要です', true); return; }
+  setStatus('前回の結果を読込中…');
+  try {
+    const j = await cfPost('getChecklistWorkbench', {});
+    if (!j.profile) { setStatus('前回の buildProfile 結果がありません。上記から台本を生成してください。'); return; }
+    PROFILE = j.profile;
+    [ANSWERS, TEXT, OVERRIDES].forEach(m => Object.keys(m).forEach(k => delete m[k]));
+    if (j.decisions) {
+      Object.assign(ANSWERS,   j.decisions.answers   || {});
+      Object.assign(TEXT,      j.decisions.text      || {});
+      Object.assign(OVERRIDES, j.decisions.overrides || {});
+    }
+    render();
+    setStatus(`前回の結果を読み込みました（台本${PROFILE.hearing_script.length}問）。`);
+  } catch(e) {
+    setStatus('エラー: ' + e.message, true);
+  }
+}
+
+function render() {
+  document.getElementById('result').style.display = '';
+  document.getElementById('savebar').style.display = '';
+  renderProfile();
+  renderCards();
+  recompute();
+}
+
+function renderProfile() {
+  const p = PROFILE.profile_card || {};
+  const g = PROFILE.gyoshu_match || {};
+  document.getElementById('profileCard').innerHTML =
+    '<div class="kv"><b>業種</b>' + esc((g.candidates && g.candidates[0] && g.candidates[0].name) || '') +
+    ' <span class="muted small">(' + esc(g.primary_code || '') + ')</span></div>' +
+    '<div class="kv"><b>企業文脈</b>' + esc(p.company_context || '') + '</div>' +
+    '<div class="kv"><b>★3動機</b>' + esc(p.scs_motivation || '') + '</div>' +
+    '<div class="kv"><b>情報資産</b><span class="assets">' +
+    (p.key_info_assets || []).map(a => '<span class="chip">' + esc(a) + '</span>').join('') +
+    '</span></div>';
+}
+
+function renderCards() {
+  const h = PROFILE.hearing_script || [];
+  document.getElementById('qcount').textContent = h.length + '問';
+  document.getElementById('cards').innerHTML = h.map(q => {
+    return '<div class="qcard t-' + esc(q.type) + '">' +
+      '<div class="qhead">' +
+        '<span class="badge b-' + esc(q.type) + '">' + (q.type === 'na_check' ? 'N/A当たり' : '実態確認') + '</span>' +
+        '<span class="src">' + srcLabel(q.source) + '</span>' +
+        '<span class="conf ' + esc(q.confidence) + '">確信度 ' + esc(q.confidence) + '</span>' +
+        '<span class="muted small">' + esc(q.id) + '</span>' +
+      '</div>' +
+      '<div class="qtext">Q. ' + esc(q.question) + '</div>' +
+      '<div class="meta"><b>根拠:</b> ' + esc(q.basis || '') + '</div>' +
+      '<div class="meta"><b>当たり:</b> ' + esc(q.inferred_answer || '') + '</div>' +
+      '<div class="crit">' + (q.linked_criteria || []).map(c => '<span class="chip">' + esc(c) + '</span>').join('') + '</div>' +
+      answerControl(q) +
+    '</div>';
+  }).join('');
+}
+
+function srcLabel(s) { return { zendesk: '面談', gyoshu_jiten: '事典', hp: 'HP' }[s] || s || ''; }
+function isClosed(q) { return q.answer_type ? q.answer_type === 'closed' : !!(q.on_yes && q.on_no); }
+
+function answerControl(q) {
+  const n = (q.linked_criteria || []).length;
+  if (isClosed(q)) {
+    const ans = ANSWERS[q.id];
+    const yesS = actionToStatus((q.on_yes || {}).action);
+    const noS  = actionToStatus((q.on_no  || {}).action);
+    return '<div class="ans">' +
+        '<button class="' + (ans === 'yes' ? 'on-yes' : '') + '" onclick="answer(\'' + q.id + '\',\'yes\')">はい</button>' +
+        '<button class="' + (ans === 'no'  ? 'on-no'  : '') + '" onclick="answer(\'' + q.id + '\',\'no\')">いいえ</button>' +
+        '<button class="' + (ans === 'unknown' ? 'on-unknown' : '') + '" onclick="answer(\'' + q.id + '\',\'unknown\')">不明</button>' +
+      '</div>' +
+      '<div class="preview">はい→<span class="act ' + stClass(yesS) + '">' + yesS + '</span>' +
+        '／いいえ→<span class="act ' + stClass(noS) + '">' + noS + '</span> ' +
+        '<span class="muted">（' + n + '基準に適用）</span></div>';
+  }
+  const txt = TEXT[q.id] || '';
+  const opts = q.answer_options || [];
+  return '<div class="openans">' +
+      '<div class="small muted" style="margin-bottom:3px">記述回答（はい/いいえでは答えられない設問）</div>' +
+      (opts.length ? '<div class="optchips">' + opts.map(o =>
+        '<button class="optchip" onclick="fillOpen(\'' + q.id + '\',this.textContent)">' + esc(o) + '</button>'
+      ).join('') + '</div>' : '') +
+      '<input type="text" class="opentext" value="' + esc(txt) + '" placeholder="回答を記入…" oninput="openAnswer(\'' + q.id + '\',this.value)">' +
+      '<div class="preview muted">回答後、右の達成状況で ' + n + '基準を <span class="act 要評価">要評価</span> として専門家が確定</div>' +
+    '</div>';
+}
+
+function answer(qid, val) {
+  ANSWERS[qid] = (ANSWERS[qid] === val) ? undefined : val;
+  renderCards(); recompute();
+}
+function fillOpen(qid, val) { TEXT[qid] = val; renderCards(); recompute(); }
+function openAnswer(qid, val) { TEXT[qid] = val; recompute(); }
+
+function resolve() {
+  const map = {};
+  for (const q of (PROFILE.hearing_script || [])) {
+    let status;
+    if (isClosed(q)) {
+      const ans = ANSWERS[q.id];
+      if (!ans) continue;
+      if (ans === 'unknown') status = '不明';
+      else status = actionToStatus((ans === 'yes' ? q.on_yes : q.on_no || {}).action);
+    } else {
+      if (!(TEXT[q.id] || '').trim()) continue;
+      status = '要評価';
+    }
+    for (const c of (q.linked_criteria || [])) {
+      if (!map[c]) map[c] = { status, byQuestions: [q.id] };
+      else {
+        map[c].byQuestions.push(q.id);
+        if ((RANK[status] || 0) > (RANK[map[c].status] || 0)) map[c].status = status;
+      }
+    }
+  }
+  for (const c of Object.keys(OVERRIDES)) {
+    if (!map[c]) map[c] = { status: OVERRIDES[c], byQuestions: [], overridden: true };
+    else { map[c].status = OVERRIDES[c]; map[c].overridden = true; }
+  }
+  return map;
+}
+
+function recompute() {
+  const map = resolve();
+  const cnos = Object.keys(map).sort();
+  const tbody = document.querySelector('#summary tbody');
+  tbody.innerHTML = cnos.map(c => {
+    const s = map[c].status;
+    const ov = OVERRIDES[c] || '';
+    return '<tr><td><b>' + esc(c) + '</b>' + (map[c].overridden ? ' <span class="muted small">手動</span>' : '') + '</td>' +
+      '<td><span class="st ' + stClass(s) + '">' + s + '</span></td>' +
+      '<td><select onchange="setOverride(\'' + c + '\',this.value)">' +
+        '<option value="">自動</option>' +
+        LEVELS.map(l => '<option value="' + l + '"' + (ov === l ? ' selected' : '') + '>' + l + '</option>').join('') +
+      '</select></td></tr>';
+  }).join('') || '<tr><td colspan="3" class="muted small">まだ回答がありません</td></tr>';
+
+  const cnt = {};
+  cnos.forEach(c => { const s = map[c].status; cnt[s] = (cnt[s] || 0) + 1; });
+  const answered = (PROFILE.hearing_script || []).filter(q =>
+    isClosed(q) ? ANSWERS[q.id] : (TEXT[q.id] || '').trim()
+  ).length;
+  document.getElementById('counts').innerHTML =
+    Object.keys(cnt).map(s => '<span><b class="st ' + stClass(s) + '">' + s + '</b> ' + cnt[s] + '</span>').join('') +
+    '<span>回答 ' + answered + '/' + (PROFILE.hearing_script || []).length + '問</span>';
+}
+
+function setOverride(c, val) {
+  if (val) OVERRIDES[c] = val; else delete OVERRIDES[c];
+  recompute();
+}
+
+async function saveDecisions() {
+  const resolved = resolve();
+  const decisions = {
+    answers: ANSWERS,
+    text: TEXT,
+    overrides: OVERRIDES,
+    resolved: Object.fromEntries(Object.entries(resolved).map(([c, v]) => [c, v.status])),
+  };
+  try {
+    const j = await cfPost('saveCriterionDecision', { decisions });
+    document.getElementById('saveMsg').textContent =
+      `保存しました — Notion更新: ${j.notion_updated}件 スキップ: ${j.skipped}件（要評価/不明）`;
+  } catch(e) {
+    document.getElementById('saveMsg').textContent = '保存エラー: ' + e.message;
+  }
+}
+
+function updateCount() {
+  const n = document.getElementById('interview').value.length;
+  const tok = Math.round(n * 1.2);
+  const el = document.getElementById('count');
+  el.textContent = n.toLocaleString() + '字（概算 ' + tok.toLocaleString() + 'トークン）';
+  el.style.color = n > 40000 ? '#d64545' : '';
+  if (n > 40000) el.textContent += ' ⚠ 長文です。要点抜粋・分割の検討を（本番は前処理予定）';
+}
+
+function setStatus(msg, err) {
+  const el = document.getElementById('status');
+  el.textContent = msg; el.style.color = err ? '#d64545' : '';
+}
+
+function toggleGen(on, msg) {
+  document.getElementById('genBtn').disabled = on;
+  if (on) {
+    document.getElementById('status').innerHTML = '<span class="spinner"></span> ' + esc(msg || '');
+  }
+}
+</script>
+</body>
+</html>
