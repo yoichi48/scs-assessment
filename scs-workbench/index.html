@@ -360,12 +360,41 @@ function setOverride(c, val) {
   recompute();
 }
 
+// 回答から「基準×判定ソース軸」の状態(満/未/不明)とN/A集合を組み立てる（統合判定モデル §11.4）。
+// サーバ側 resolveGap がこれを合成して 達成レベル＋ギャップ種別 を確定する。
+// 専門家の手動上書き(OVERRIDES)がある基準は axes から外し、resolved経由で上書き値をそのまま書く（上書きは全軸に優先）。
+function buildAxes() {
+  const axes = {};
+  const naSet = {};
+  for (const q of (PROFILE.hearing_script || [])) {
+    if (!isClosed(q)) continue;            // open質問は軸を埋めない（→要評価のまま）
+    const ans = ANSWERS[q.id];
+    if (!ans) continue;
+    const ts = q.target_source || null;
+    for (const c of (q.linked_criteria || [])) {
+      if (OVERRIDES[c]) continue;          // 上書き済みは合成対象外
+      const act = (ans === 'yes' ? q.on_yes : ans === 'no' ? q.on_no : null) || {};
+      if (act.action === 'na') { naSet[c] = true; continue; }   // 適用外確定
+      if (!ts) continue;                   // 軸が無ければ満/未を立てない
+      let state;
+      if (ans === 'unknown') state = '不明';
+      else if (act.action === 'achieved') state = '満';
+      else state = '未';                   // evaluate等＝その軸は未充足
+      (axes[c] = axes[c] || {})[ts] = state;
+    }
+  }
+  return { axes, na: Object.keys(naSet) };
+}
+
 async function saveDecisions() {
   const resolved = resolve();
+  const { axes, na } = buildAxes();
   const decisions = {
     answers: ANSWERS,
     text: TEXT,
     overrides: OVERRIDES,
+    axes,
+    na,
     resolved: Object.fromEntries(Object.entries(resolved).map(([c, v]) => [c, v.status])),
   };
   try {
