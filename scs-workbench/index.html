@@ -184,9 +184,9 @@ async function generate() {
   const hpText = document.getElementById('hp').value.trim();
   if (!interviewText) { setStatus('面談記録を貼り付けてください', true); return; }
   if (!TENANT_ID) { setStatus('URLにテナントIDとトークンが必要です', true); return; }
-  toggleGen(true, '台本を生成中…（業種マッチング＋プロファイル生成で30〜90秒かかります）');
+  toggleGen(true, '台本を生成中…（業種マッチング＋プロファイル生成で2〜4分、最大5分ほどかかります）');
   try {
-    const j = await cfPost('buildProfile', { interview_text: interviewText, hp_text: hpText }, 180000);
+    const j = await cfPost('buildProfile', { interview_text: interviewText, hp_text: hpText }, 280000);
     PROFILE = {
       profile_card: j.profile_card,
       gyoshu_match: j.gyoshu_match,
