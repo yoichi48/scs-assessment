@@ -365,7 +365,7 @@ function setOverride(c, val) {
 // 専門家の手動上書き(OVERRIDES)がある基準は axes から外し、resolved経由で上書き値をそのまま書く（上書きは全軸に優先）。
 function buildAxes() {
   const axes = {};
-  const naSet = {};
+  const naReasons = {};                    // 基準 → N/A確定の根拠（ヒアリング由来）
   for (const q of (PROFILE.hearing_script || [])) {
     if (!isClosed(q)) continue;            // open質問は軸を埋めない（→要評価のまま）
     const ans = ANSWERS[q.id];
@@ -374,7 +374,12 @@ function buildAxes() {
     for (const c of (q.linked_criteria || [])) {
       if (OVERRIDES[c]) continue;          // 上書き済みは合成対象外
       const act = (ans === 'yes' ? q.on_yes : ans === 'no' ? q.on_no : null) || {};
-      if (act.action === 'na') { naSet[c] = true; continue; }   // 適用外確定
+      if (act.action === 'na') {           // 適用外確定＋根拠を記録
+        const note = (act.note || '').trim();
+        naReasons[c] = `ヒアリング確認：「${q.question}」→${ans === 'yes' ? 'はい' : 'いいえ'}`
+          + (note ? `（${note}）` : '');
+        continue;
+      }
       if (!ts) continue;                   // 軸が無ければ満/未を立てない
       let state;
       if (ans === 'unknown') state = '不明';
@@ -383,18 +388,19 @@ function buildAxes() {
       (axes[c] = axes[c] || {})[ts] = state;
     }
   }
-  return { axes, na: Object.keys(naSet) };
+  return { axes, na: Object.keys(naReasons), naReasons };
 }
 
 async function saveDecisions() {
   const resolved = resolve();
-  const { axes, na } = buildAxes();
+  const { axes, na, naReasons } = buildAxes();
   const decisions = {
     answers: ANSWERS,
     text: TEXT,
     overrides: OVERRIDES,
     axes,
     na,
+    naReasons,
     resolved: Object.fromEntries(Object.entries(resolved).map(([c, v]) => [c, v.status])),
   };
   try {
