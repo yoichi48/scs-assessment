@@ -95,10 +95,13 @@
         <button class="primary" id="genBtn" onclick="generate()">台本を生成</button>
       </div>
     </div>
+    <textarea id="summary" rows="3" placeholder="会社概要（業種判断用）。例:&#10;https://example.co.jp/&#10;■事業内容 自動車メーカー向け部品製造がメイン（売上70〜80%）。次に介護用品メーカーのOEM。完全受注型だが在庫管理も行う。" style="margin-top:10px"></textarea>
+    <div class="small muted" style="margin-top:4px">↑ 業種マッチングに使います（数万字の面談記録は業種判断に流しません）。事業内容を数行で。</div>
     <textarea id="interview" rows="6" placeholder="Zendesk面談記録テキストを貼り付け…（数万文字でも可）" style="margin-top:10px" oninput="updateCount()"></textarea>
     <div id="count" class="small muted" style="margin-top:4px">0字</div>
-    <details style="margin-top:8px"><summary class="small muted">HP抜粋（任意）</summary>
-      <textarea id="hp" rows="3" placeholder="クライアントHPの抜粋（任意）"></textarea>
+    <details style="margin-top:8px"><summary class="small muted">HP URL・HP抜粋（任意）</summary>
+      <input id="hpurl" type="url" placeholder="クライアントHPのURL（任意・記録用。Claudeには送りません）" style="width:100%;margin-bottom:6px">
+      <textarea id="hp" rows="3" placeholder="クライアントHPの抜粋テキスト（任意・本文をClaudeに送ります）"></textarea>
     </details>
     <div id="status" class="small muted" style="margin-top:8px"></div>
   </div>
@@ -182,11 +185,13 @@ async function cfPost(endpoint, body, timeoutMs = 120000) {
 async function generate() {
   const interviewText = document.getElementById('interview').value.trim();
   const hpText = document.getElementById('hp').value.trim();
+  const summaryText = document.getElementById('summary').value.trim();
+  const hpUrl = document.getElementById('hpurl').value.trim();
   if (!interviewText) { setStatus('面談記録を貼り付けてください', true); return; }
   if (!TENANT_ID) { setStatus('URLにテナントIDとトークンが必要です', true); return; }
   toggleGen(true, '台本を生成中…（業種マッチング＋プロファイル生成で2〜4分、最大5分ほどかかります）');
   try {
-    const j = await cfPost('buildProfile', { interview_text: interviewText, hp_text: hpText }, 280000);
+    const j = await cfPost('buildProfile', { interview_text: interviewText, hp_text: hpText, company_summary: summaryText, hp_url: hpUrl }, 280000);
     PROFILE = {
       profile_card: j.profile_card,
       gyoshu_match: j.gyoshu_match,
@@ -196,7 +201,11 @@ async function generate() {
     [ANSWERS, TEXT, OVERRIDES].forEach(m => Object.keys(m).forEach(k => delete m[k]));
     render();
     const notionMsg = j.notion_written > 0 ? ` Notion注釈${j.notion_written}件書込済` : '';
-    setStatus(`生成しました（台本${PROFILE.hearing_script.length}問）。回答を記録してください。${notionMsg}`);
+    const d = j.interview_distill;
+    const distillMsg = (d && d.distilled)
+      ? ` ／ 面談記録が長文のため要点蒸留して処理（${d.originalLength}字→${d.distilledLength}字）`
+      : '';
+    setStatus(`生成しました（台本${PROFILE.hearing_script.length}問）。回答を記録してください。${notionMsg}${distillMsg}`);
   } catch(e) {
     setStatus('エラー: ' + e.message, true);
   } finally {
