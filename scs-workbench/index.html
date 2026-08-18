@@ -255,7 +255,7 @@ function render() {
   recompute();
 }
 
-const DOC_CATEGORY_ORDER = ['基本方針', '組織規程', '技術規程', '手順書'];
+const DOC_CATEGORY_ORDER = ['基本方針', '組織規程', '技術規程', '手順書', '労務'];
 
 function renderDocumentRequests() {
   const items = PROFILE.document_requests || [];
@@ -267,7 +267,7 @@ function renderDocumentRequests() {
   document.getElementById('docRequestList').innerHTML = DOC_CATEGORY_ORDER.filter(c => groups[c]).map(cat =>
     '<div class="kv"><b>' + esc(cat) + '</b></div>' +
     '<div class="assets" style="margin-bottom:6px">' + groups[cat].map(it =>
-      '<span class="chip" title="関連基準: ' + esc((it.matched_criteria || []).join('、')) + '">' + esc(it.regulation_name) + '</span>'
+      '<span class="chip" title="' + esc(it.basis || '') + '">' + esc(it.name) + '</span>'
     ).join('') + '</div>'
   ).join('');
 }
@@ -275,7 +275,7 @@ function renderDocumentRequests() {
 async function copyDocumentRequests() {
   const items = PROFILE.document_requests || [];
   if (!items.length) { setStatus('コピーする書類がありません', true); return; }
-  const text = items.map((it, i) => `${i + 1}. ${it.regulation_name}`).join('\n');
+  const text = items.map((it, i) => `${i + 1}. ${it.name}`).join('\n');
   try {
     await navigator.clipboard.writeText(text);
   } catch (e) {
