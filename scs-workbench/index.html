@@ -113,7 +113,10 @@
 
     <div class="grid">
       <div>
-        <h2>② ヒアリング台本 <span class="muted small" id="qcount"></span></h2>
+        <div class="row" style="justify-content:space-between;align-items:baseline;border-bottom:2px solid var(--line);padding-bottom:6px;margin:24px 0 10px">
+          <h2 style="margin:0;padding:0;border:none">② ヒアリング台本 <span class="muted small" id="qcount"></span></h2>
+          <button onclick="copyQuestions()">📋 質問リストをコピー</button>
+        </div>
         <div id="cards"></div>
       </div>
       <div class="sticky">
@@ -272,6 +275,22 @@ function renderCards() {
       answerControl(q) +
     '</div>';
   }).join('');
+}
+
+async function copyQuestions() {
+  const h = PROFILE.hearing_script || [];
+  if (!h.length) { setStatus('コピーする質問がありません', true); return; }
+  const text = h.map((q, i) => `${i + 1}. ${q.question}`).join('\n');
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  }
+  setStatus(`質問リストをコピーしました（${h.length}問）`);
 }
 
 function srcLabel(s) { return { zendesk: '面談', gyoshu_jiten: '事典', hp: 'HP' }[s] || s || ''; }
