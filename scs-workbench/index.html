@@ -109,6 +109,15 @@
   <div id="result" style="display:none">
     <div class="panel" id="profileCard"></div>
 
+    <div class="panel" id="docRequests" style="display:none">
+      <div class="row" style="justify-content:space-between;align-items:baseline">
+        <strong>📄 徴求する書類 <span class="muted small">（ヒアリング内容から自動抽出）</span></strong>
+        <button onclick="copyDocumentRequests()">📋 書類リストをコピー</button>
+      </div>
+      <div class="small muted" style="margin-top:4px">台本の設問に関連する規程・様式です。ヒアリング前にクライアントへ依頼する書類の目安としてご利用ください（労務関係の契約書等、マスタ化されていない書類は含まれません）。</div>
+      <div id="docRequestList" style="margin-top:8px"></div>
+    </div>
+
     <div class="note">このワークベンチが<b>ヒアリングの実施面</b>です（第0層は台本生成まで）。各確認質問に <b>Yes/No/不明</b> を記録すると、回答が対応する<b>軸</b>を埋めます——構造的事実は <b>N/A（適用可否）</b>を確定し、運用の有無は <b>運用軸(b)</b> を満/未にします。<b>達成状況は規程(a)・運用(b)・証跡(c)の必要分を合成して決まり、回答で直接上書きはしません</b>（右の値は目安のライブ表示。最終確定は保存時のサーバ合成）。<b>「不明」は要評価</b>のまま据え置き、最終値は専門家が上書きできます。</div>
 
     <div class="grid">
@@ -200,6 +209,7 @@ async function generate() {
       gyoshu_match: j.gyoshu_match,
       hearing_script: j.hearing_script || [],
       checklist_annotations: j.checklist_annotations || [],
+      document_requests: j.document_requests || [],
     };
     [ANSWERS, TEXT, OVERRIDES].forEach(m => Object.keys(m).forEach(k => delete m[k]));
     render();
@@ -240,8 +250,42 @@ function render() {
   document.getElementById('result').style.display = '';
   document.getElementById('savebar').style.display = '';
   renderProfile();
+  renderDocumentRequests();
   renderCards();
   recompute();
+}
+
+const DOC_CATEGORY_ORDER = ['基本方針', '組織規程', '技術規程', '手順書'];
+
+function renderDocumentRequests() {
+  const items = PROFILE.document_requests || [];
+  const panel = document.getElementById('docRequests');
+  if (!items.length) { panel.style.display = 'none'; return; }
+  panel.style.display = '';
+  const groups = {};
+  for (const it of items) { (groups[it.category] = groups[it.category] || []).push(it); }
+  document.getElementById('docRequestList').innerHTML = DOC_CATEGORY_ORDER.filter(c => groups[c]).map(cat =>
+    '<div class="kv"><b>' + esc(cat) + '</b></div>' +
+    '<div class="assets" style="margin-bottom:6px">' + groups[cat].map(it =>
+      '<span class="chip" title="関連基準: ' + esc((it.matched_criteria || []).join('、')) + '">' + esc(it.regulation_name) + '</span>'
+    ).join('') + '</div>'
+  ).join('');
+}
+
+async function copyDocumentRequests() {
+  const items = PROFILE.document_requests || [];
+  if (!items.length) { setStatus('コピーする書類がありません', true); return; }
+  const text = items.map((it, i) => `${i + 1}. ${it.regulation_name}`).join('\n');
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  }
+  setStatus(`書類リストをコピーしました（${items.length}件）`);
 }
 
 function renderProfile() {
