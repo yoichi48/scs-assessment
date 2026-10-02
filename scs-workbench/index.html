@@ -56,6 +56,9 @@
   .preview .act{display:inline-block;font-weight:700;font-size:11px;border-radius:5px;padding:0 6px;margin:0 3px}
   .act.NA{background:#e7f4f2;color:var(--teal)} .act.達成{background:#eaf1f8;color:var(--blue)}
   .act.要評価{background:#fdf2e0;color:var(--amber)} .act.不明{background:#eef2f6;color:var(--sub)}
+  .act.あり{background:#eaf1f8;color:var(--blue)} .act.なし{background:#fdeaea;color:var(--red)}
+  .preview .line{margin:2px 0} .preview .line b{color:var(--ink);font-weight:600;display:inline-block;min-width:3.5em}
+  .legacy{color:#b07400;font-size:12px;margin-top:6px}
   .sticky{position:sticky;top:14px}
   table{width:100%;border-collapse:collapse;font-size:12.5px}
   th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
@@ -118,7 +121,7 @@
       <div id="docRequestList" style="margin-top:8px"></div>
     </div>
 
-    <div class="note">このワークベンチが<b>ヒアリングの実施面</b>です（第0層は台本生成まで）。各確認質問に <b>Yes/No/不明</b> を記録すると、回答が対応する<b>軸</b>を埋めます——構造的事実は <b>N/A（適用可否）</b>を確定し、運用の有無は <b>運用軸(b)</b> を満/未にします。<b>達成状況は規程(a)・運用(b)・証跡(c)の必要分を合成して決まり、回答で直接上書きはしません</b>（右の値は目安のライブ表示。最終確定は保存時のサーバ合成）。<b>「不明」は要評価</b>のまま据え置き、最終値は専門家が上書きできます。</div>
+    <div class="note">このワークベンチが<b>ヒアリングの実施面</b>です。各質問の下に、<b>はい／いいえ それぞれの意味と次の一歩</b>を表示しています。回答は、規程・文書／実際の運用／証跡・記録 などの<b>判定材料のひとつ</b>として記録され、<b>達成状況は保存時に必要な材料をそろえて決まります</b>（右の値は目安。回答で直接上書きはしません）。対象外を確かめる質問は <b>N/A</b> を確定します。<b>「不明」は要確認</b>のまま残り、最終値は専門家が上書きできます。保存すると、各基準の<b>「ヒアリング記録」に質問・回答・次の一歩</b>が残ります。</div>
 
     <div class="grid">
       <div>
@@ -169,7 +172,6 @@ if (!TENANT_ID || !TOK || !EXP) {
 
 function auth() { return { tenant_id: TENANT_ID, tok: TOK, exp: EXP }; }
 
-function actionToStatus(a){ return {na:'N/A',achieved:'達成',evaluate:'要評価'}[a] || '不明'; }
 function stClass(s){ return s==='N/A'?'NA':s; }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
@@ -340,20 +342,63 @@ async function copyQuestions() {
 function srcLabel(s) { return { zendesk: '面談', gyoshu_jiten: '事典', hp: 'HP' }[s] || s || ''; }
 function isClosed(q) { return q.answer_type ? q.answer_type === 'closed' : !!(q.on_yes && q.on_no); }
 
+// 判定材料（target_source）の専門家向け表示名。内部の「軸」「満/未」は画面に出さない（§11.10 決定3）。
+const SOURCE_LABEL = {
+  regulation: '規程・文書', hearing: '実際の運用', evidence_file: '証跡・記録',
+  org_db: '体制の記録（組織図など）', it_asset_db: 'IT資産の記録', access_db: 'アクセス権の記録',
+  vendor_db: '委託先の記録', inspection_db: '点検の記録', contact_db: '連絡先の記録',
+  backup_db: 'バックアップの記録', training_db: '教育の記録', info_asset_db: '情報資産の記録',
+};
+const ANSWER_LABEL = { yes: 'はい', no: 'いいえ', unknown: '不明' };
+function sideOf(q, ans) { return (ans === 'yes' ? q.on_yes : ans === 'no' ? q.on_no : null) || {}; }
+// actual_check の軸の状態は台本の axis_state だけを信じる（問いの向きに依存しない・§11.10 決定1）
+function axisStateOf(q, ans) {
+  const st = sideOf(q, ans).axis_state;
+  return (st === '満' || st === '未') ? st : null;
+}
+// 旧形式の台本（axis_state なし）の actual_check は向きが確定できない → 軸を自動で埋めない
+function isLegacyActual(q) {
+  if (!isClosed(q) || !q.target_source) return false;
+  return !axisStateOf(q, 'yes') || !axisStateOf(q, 'no');
+}
+// 回答の意味（はい/いいえ → 何がわかるか）。kind は表示色、text は記録にも使う文言
+function meaningOf(q, ans) {
+  if (ans === 'unknown') return { kind: '不明', text: '要確認' };
+  const side = sideOf(q, ans);
+  if (side.action === 'na') return { kind: 'NA', text: '対象外（N/A）' };
+  if (!q.target_source) return { kind: '要評価', text: '対象（引き続き確認）' };
+  const st = axisStateOf(q, ans);
+  const label = SOURCE_LABEL[q.target_source] || q.target_source;
+  if (!st) return { kind: '不明', text: `要確認（${label}：回答の向きが未設定の台本）` };
+  return st === '満' ? { kind: 'あり', text: `${label}：あり` } : { kind: 'なし', text: `${label}：なし（要整備）` };
+}
+// 次の一歩（台本の note）。na の記録用メモ（「〜をN/Aとして記録。」）は次の一歩ではないので出さない
+function nextStepOf(q, ans) {
+  if (ans === 'unknown') return '';
+  const side = sideOf(q, ans);
+  if (side.action === 'na' || !q.target_source || !axisStateOf(q, ans)) return '';
+  return (side.note || '').trim();
+}
+
 function answerControl(q) {
   const n = (q.linked_criteria || []).length;
   if (isClosed(q)) {
     const ans = ANSWERS[q.id];
-    const yesS = actionToStatus((q.on_yes || {}).action);
-    const noS  = actionToStatus((q.on_no  || {}).action);
+    const line = (a) => {
+      const m = meaningOf(q, a), nx = nextStepOf(q, a);
+      return '<div class="line"><b>' + ANSWER_LABEL[a] + ' →</b><span class="act ' + stClass(m.kind) + '">' + esc(m.text) + '</span>' +
+        (nx ? '<span class="muted">次の一歩：' + esc(nx) + '</span>' : '') + '</div>';
+    };
     return '<div class="ans">' +
         '<button class="' + (ans === 'yes' ? 'on-yes' : '') + '" onclick="answer(\'' + q.id + '\',\'yes\')">はい</button>' +
         '<button class="' + (ans === 'no'  ? 'on-no'  : '') + '" onclick="answer(\'' + q.id + '\',\'no\')">いいえ</button>' +
         '<button class="' + (ans === 'unknown' ? 'on-unknown' : '') + '" onclick="answer(\'' + q.id + '\',\'unknown\')">不明</button>' +
       '</div>' +
-      '<div class="preview">はい→<span class="act ' + stClass(yesS) + '">' + yesS + '</span>' +
-        '／いいえ→<span class="act ' + stClass(noS) + '">' + noS + '</span> ' +
-        '<span class="muted">（' + n + '基準に適用）</span></div>';
+      '<div class="preview">' + line('yes') + line('no') +
+        '<div class="muted">（' + n + '基準に反映）</div></div>' +
+      (isLegacyActual(q)
+        ? '<div class="legacy">⚠ この台本は回答の向きが設定されていない旧形式です。回答は記録しますが達成状況には自動反映しません。必要なら右の上書きで確定してください。</div>'
+        : '');
   }
   const txt = TEXT[q.id] || '';
   const opts = q.answer_options || [];
@@ -382,7 +427,7 @@ function resolve() {
       const ans = ANSWERS[q.id];
       if (!ans) continue;
       if (ans === 'unknown') status = '不明';
-      else status = actionToStatus((ans === 'yes' ? q.on_yes : q.on_no || {}).action);
+      else status = sideOf(q, ans).action === 'na' ? 'N/A' : '要評価'; // 達成は保存時の合成で決まる
     } else {
       if (!(TEXT[q.id] || '').trim()) continue;
       status = '要評価';
@@ -455,12 +500,30 @@ function buildAxes() {
       if (!ts) continue;                   // 軸が無ければ満/未を立てない
       let state;
       if (ans === 'unknown') state = '不明';
-      else if (act.action === 'achieved') state = '満';
-      else state = '未';                   // evaluate等＝その軸は未充足
+      else state = axisStateOf(q, ans);    // 台本が明示した向きだけを使う（§11.10 決定1）
+      if (!state) continue;                // 旧形式の台本は向きが確定できないので埋めない
       (axes[c] = axes[c] || {})[ts] = state;
     }
   }
   return { axes, na: Object.keys(naReasons), naReasons };
+}
+
+// 回答済みの質問を「ヒアリング記録」用に並べる（記録文の組み立てはサーバ側・§11.10 決定4）
+function buildHearingLog() {
+  const log = [];
+  for (const q of (PROFILE.hearing_script || [])) {
+    const criteria = q.linked_criteria || [];
+    if (isClosed(q)) {
+      const ans = ANSWERS[q.id];
+      if (!ans) continue;
+      log.push({ question: q.question, answer: ANSWER_LABEL[ans], meaning: meaningOf(q, ans).text, next: nextStepOf(q, ans), criteria });
+    } else {
+      const txt = (TEXT[q.id] || '').trim();
+      if (!txt) continue;
+      log.push({ question: q.question, answer: txt, criteria });
+    }
+  }
+  return log;
 }
 
 async function saveDecisions() {
@@ -474,11 +537,16 @@ async function saveDecisions() {
     na,
     naReasons,
     resolved: Object.fromEntries(Object.entries(resolved).map(([c, v]) => [c, v.status])),
+    hearing_log: buildHearingLog(),
   };
   try {
     const j = await cfPost('saveCriterionDecision', { decisions });
+    const hr = {
+      ok: `ヒアリング記録: ${j.hearing_recorded}件更新`,
+      no_property: 'ヒアリング記録: このチェックリストには「ヒアリング記録」欄がないため未記録',
+    }[j.hearing_record_status] || '';
     document.getElementById('saveMsg').textContent =
-      `保存しました — Notion更新: ${j.notion_updated}件 スキップ: ${j.skipped}件（要評価/不明）`;
+      `保存しました — Notion更新: ${j.notion_updated}件 スキップ: ${j.skipped}件（要評価/不明）` + (hr ? ` ／ ${hr}` : '');
   } catch(e) {
     document.getElementById('saveMsg').textContent = '保存エラー: ' + e.message;
   }
