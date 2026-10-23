@@ -311,12 +311,12 @@ function renderCards() {
       '<div class="qhead">' +
         '<span class="badge b-' + esc(q.type) + '">' + (q.type === 'na_check' ? 'N/A当たり' : '実態確認') + '</span>' +
         '<span class="src">' + srcLabel(q.source) + '</span>' +
-        '<span class="conf ' + esc(q.confidence) + '">確信度 ' + esc(q.confidence) + '</span>' +
+        (q.confidence ? '<span class="conf ' + esc(q.confidence) + '">確信度 ' + esc(q.confidence) + '</span>' : '') +
         '<span class="muted small">' + esc(q.id) + '</span>' +
       '</div>' +
       '<div class="qtext">Q. ' + esc(q.question) + '</div>' +
       '<div class="meta"><b>根拠:</b> ' + esc(q.basis || '') + '</div>' +
-      '<div class="meta"><b>当たり:</b> ' + esc(q.inferred_answer || '') + '</div>' +
+      (q.inferred_answer ? '<div class="meta"><b>当たり:</b> ' + esc(q.inferred_answer) + '</div>' : '') +
       '<div class="crit">' + (q.linked_criteria || []).map(c => '<span class="chip">' + esc(c) + '</span>').join('') + '</div>' +
       answerControl(q) +
     '</div>';
@@ -339,7 +339,7 @@ async function copyQuestions() {
   setStatus(`質問リストをコピーしました（${h.length}問）`);
 }
 
-function srcLabel(s) { return { zendesk: '面談', gyoshu_jiten: '事典', hp: 'HP' }[s] || s || ''; }
+function srcLabel(s) { return { zendesk: '面談', gyoshu_jiten: '事典', hp: 'HP', fixed: '共通設問' }[s] || s || ''; }
 function isClosed(q) { return q.answer_type ? q.answer_type === 'closed' : !!(q.on_yes && q.on_no); }
 
 // 判定材料（target_source）の専門家向け表示名。内部の「軸」「満/未」は画面に出さない（§11.10 決定3）。
