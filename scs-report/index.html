@@ -90,6 +90,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino San
     </div>
 
     <div class="msg msg-warn" id="task-warning" style="display:none;"></div>
+    <div class="msg msg-warn" id="period-warning" style="display:none;"></div>
   </div>
 
   <div class="footer">
@@ -214,6 +215,16 @@ async function generateReport() {
       warnEl.style.display = 'block';
     } else {
       warnEl.style.display = 'none';
+    }
+
+    // 期間未設定タスク警告（ロードマップにバーが出ないため気づきにくい）
+    const periodEl = document.getElementById('period-warning');
+    const undated = data.undated_tasks || [];
+    if (undated.length > 0) {
+      periodEl.textContent = `⚠️ 実施期間が空のタスクが ${undated.length} 件あります（${undated.join('、')}）。対策ロードマップに表示されません。タスク管理DBで期間を入力してからレポートを出力することを推奨します。`;
+      periodEl.style.display = 'block';
+    } else {
+      periodEl.style.display = 'none';
     }
 
   } catch (e) {
