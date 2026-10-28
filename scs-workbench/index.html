@@ -52,6 +52,8 @@
   .optchip{font-size:12px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:2px 10px}
   .optchip:hover{background:var(--chip)}
   .opentext{width:100%;font:inherit;border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+  .multirow{display:flex;flex-direction:column;gap:3px;margin-bottom:5px}
+  .multirow label{font-size:13px;cursor:pointer}
   .preview{font-size:12px;margin-top:8px;color:var(--sub)}
   .preview .act{display:inline-block;font-weight:700;font-size:11px;border-radius:5px;padding:0 6px;margin:0 3px}
   .act.NA{background:#e7f4f2;color:var(--teal)} .act.達成{background:#eaf1f8;color:var(--blue)}
@@ -117,7 +119,7 @@
         <strong>📄 徴求する書類 <span class="muted small">（ヒアリング内容から自動抽出）</span></strong>
         <button onclick="copyDocumentRequests()">📋 書類リストをコピー</button>
       </div>
-      <div class="small muted" style="margin-top:4px">面談記録の実態（規模・雇用形態・委託先やITインフラの有無など）から「おそらく持っているはず」と推測した書類です。ヒアリング前にクライアントへ依頼する目安としてご利用ください（推測のため、実際の依頼前に個別にご確認ください）。</div>
+      <div class="small muted" style="margin-top:4px">「共通」は全社に依頼する書類です。それ以外は、面談記録から「既に持っていそう」と推察した書類です。ヒアリング前にクライアントへ依頼する目安としてご利用ください（推測のため、実際の依頼前に個別にご確認ください）。</div>
       <div id="docRequestList" style="margin-top:8px"></div>
     </div>
 
@@ -257,7 +259,7 @@ function render() {
   recompute();
 }
 
-const DOC_CATEGORY_ORDER = ['基本方針', '組織規程', '技術規程', '手順書', '労務'];
+const DOC_CATEGORY_ORDER = ['共通', '基本方針', '組織規程', '技術規程', '手順書', '労務'];
 
 function renderDocumentRequests() {
   const items = PROFILE.document_requests || [];
@@ -400,6 +402,7 @@ function answerControl(q) {
         ? '<div class="legacy">⚠ この台本は回答の向きが設定されていない旧形式です。回答は記録しますが達成状況には自動反映しません。必要なら右の上書きで確定してください。</div>'
         : '');
   }
+  if (isMulti(q)) return multiControl(q);
   const txt = TEXT[q.id] || '';
   const opts = q.answer_options || [];
   return '<div class="openans">' +
@@ -410,6 +413,44 @@ function answerControl(q) {
       '<input type="text" class="opentext" value="' + esc(txt) + '" placeholder="回答を記入…" oninput="openAnswer(\'' + q.id + '\',this.value)">' +
       '<div class="preview muted">回答後、右の達成状況で ' + n + '基準を <span class="act 要評価">要評価</span> として専門家が確定</div>' +
     '</div>';
+}
+
+// 複数選択（例：委託先・相談先）。TEXT[q.id] は { 選択肢: 委託先名など } で持ち、キーがあれば選択済み
+// 「なし」は他の選択肢と同時に選べず、名前の欄も出さない
+const MULTI_NONE = 'なし';
+function isMulti(q) { return q.answer_type === 'multi'; }
+function multiOf(qid) { const v = TEXT[qid]; return (v && typeof v === 'object') ? v : {}; }
+function multiControl(q) {
+  const n = (q.linked_criteria || []).length;
+  const sel = multiOf(q.id);
+  const qi = esc(JSON.stringify(q.id)), oi = (o) => esc(JSON.stringify(o));
+  return '<div class="openans">' +
+      '<div class="small muted" style="margin-bottom:3px">複数選択可。選んだ項目に委託先・相談先の名前を記入</div>' +
+      (q.answer_options || []).map(o => {
+        const on = Object.prototype.hasOwnProperty.call(sel, o);
+        return '<div class="multirow">' +
+          '<label><input type="checkbox"' + (on ? ' checked' : '') + ' onchange="toggleMulti(' + qi + ',' + oi(o) + ',this.checked)"> ' + esc(o) + '</label>' +
+          (on && o !== MULTI_NONE ? '<input type="text" class="opentext" value="' + esc(sel[o] || '') + '" placeholder="' + (o === 'その他' ? '内容と委託先・相談先' : '委託先・相談先の名前') + '" oninput="multiDetail(' + qi + ',' + oi(o) + ',this.value)">' : '') +
+        '</div>';
+      }).join('') +
+      '<div class="preview muted">回答後、右の達成状況で ' + n + '基準を <span class="act 要評価">要評価</span> として専門家が確定</div>' +
+    '</div>';
+}
+function toggleMulti(qid, opt, on) {
+  let sel = { ...multiOf(qid) };
+  if (on && opt === MULTI_NONE) sel = {};
+  else if (on) delete sel[MULTI_NONE];
+  if (on) sel[opt] = sel[opt] || ''; else delete sel[opt];
+  TEXT[qid] = Object.keys(sel).length ? sel : undefined;
+  renderCards(); recompute();
+}
+function multiDetail(qid, opt, val) { TEXT[qid] = { ...multiOf(qid), [opt]: val }; recompute(); }
+// 記述・複数選択の回答を記録用の1行にする（未回答は空文字）
+function openText(q) {
+  if (!isMulti(q)) return (typeof TEXT[q.id] === 'string' ? TEXT[q.id] : '').trim();
+  const sel = multiOf(q.id);
+  return (q.answer_options || []).filter(o => Object.prototype.hasOwnProperty.call(sel, o))
+    .map(o => (sel[o] || '').trim() ? o + '：' + sel[o].trim() : o).join('／');
 }
 
 function answer(qid, val) {
@@ -429,7 +470,7 @@ function resolve() {
       if (ans === 'unknown') status = '不明';
       else status = sideOf(q, ans).action === 'na' ? 'N/A' : '要評価'; // 達成は保存時の合成で決まる
     } else {
-      if (!(TEXT[q.id] || '').trim()) continue;
+      if (!openText(q)) continue;
       status = '要評価';
     }
     for (const c of (q.linked_criteria || [])) {
@@ -465,7 +506,7 @@ function recompute() {
   const cnt = {};
   cnos.forEach(c => { const s = map[c].status; cnt[s] = (cnt[s] || 0) + 1; });
   const answered = (PROFILE.hearing_script || []).filter(q =>
-    isClosed(q) ? ANSWERS[q.id] : (TEXT[q.id] || '').trim()
+    isClosed(q) ? ANSWERS[q.id] : openText(q)
   ).length;
   document.getElementById('counts').innerHTML =
     Object.keys(cnt).map(s => '<span><b class="st ' + stClass(s) + '">' + s + '</b> ' + cnt[s] + '</span>').join('') +
@@ -518,7 +559,7 @@ function buildHearingLog() {
       if (!ans) continue;
       log.push({ question: q.question, answer: ANSWER_LABEL[ans], meaning: meaningOf(q, ans).text, next: nextStepOf(q, ans), criteria });
     } else {
-      const txt = (TEXT[q.id] || '').trim();
+      const txt = openText(q);
       if (!txt) continue;
       log.push({ question: q.question, answer: txt, criteria });
     }
