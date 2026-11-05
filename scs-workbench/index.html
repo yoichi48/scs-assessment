@@ -100,8 +100,8 @@
         <button class="primary" id="genBtn" onclick="generate()">台本を生成</button>
       </div>
     </div>
-    <textarea id="summary" rows="3" placeholder="会社概要（業種判断用）。例:&#10;https://example.co.jp/&#10;■事業内容 自動車メーカー向け部品製造がメイン（売上70〜80%）。次に介護用品メーカーのOEM。完全受注型だが在庫管理も行う。" style="margin-top:10px"></textarea>
-    <div class="small muted" style="margin-top:4px">↑ 業種マッチングに使います（数万字の面談記録は業種判断に流しません）。事業内容を数行で。</div>
+    <textarea id="summary" rows="3" placeholder="会社概要。例:&#10;https://example.co.jp/&#10;■事業内容 自動車メーカー向け部品製造がメイン（売上70〜80%）。次に介護用品メーカーのOEM。完全受注型だが在庫管理も行う。" style="margin-top:10px"></textarea>
+    <div class="small muted" style="margin-top:4px">↑ 台本の生成に使います。事業内容を数行で。</div>
     <textarea id="interview" rows="6" placeholder="Zendesk面談記録テキストを貼り付け…（数万文字でも可）" style="margin-top:10px" oninput="updateCount()"></textarea>
     <div id="count" class="small muted" style="margin-top:4px">0字</div>
     <details style="margin-top:8px"><summary class="small muted">HP URL・HP抜粋（任意）</summary>
@@ -205,12 +205,11 @@ async function generate() {
   const hpUrl = document.getElementById('hpurl').value.trim();
   if (!interviewText) { setStatus('面談記録を貼り付けてください', true); return; }
   if (!TENANT_ID) { setStatus('URLにテナントIDとトークンが必要です', true); return; }
-  toggleGen(true, '台本を生成中…（業種マッチング＋プロファイル生成で2〜4分、最大5分ほどかかります）');
+  toggleGen(true, '台本を生成中…（2〜4分、最大5分ほどかかります）');
   try {
     const j = await cfPost('buildProfile', { interview_text: interviewText, hp_text: hpText, company_summary: summaryText, hp_url: hpUrl }, 280000);
     PROFILE = {
       profile_card: j.profile_card,
-      gyoshu_match: j.gyoshu_match,
       hearing_script: j.hearing_script || [],
       checklist_annotations: j.checklist_annotations || [],
       document_requests: j.document_requests || [],
@@ -294,10 +293,7 @@ async function copyDocumentRequests() {
 
 function renderProfile() {
   const p = PROFILE.profile_card || {};
-  const g = PROFILE.gyoshu_match || {};
   document.getElementById('profileCard').innerHTML =
-    '<div class="kv"><b>業種</b>' + esc((g.candidates && g.candidates[0] && g.candidates[0].name) || '') +
-    ' <span class="muted small">(' + esc(g.primary_code || '') + ')</span></div>' +
     '<div class="kv"><b>企業文脈</b>' + esc(p.company_context || '') + '</div>' +
     '<div class="kv"><b>★3動機</b>' + esc(p.scs_motivation || '') + '</div>' +
     '<div class="kv"><b>情報資産</b><span class="assets">' +
