@@ -30,10 +30,10 @@
   .assets{display:flex;flex-wrap:wrap;gap:6px;margin-top:3px}
   .chip{background:var(--chip);border-radius:999px;padding:2px 10px;font-size:12px}
   .qcard{background:var(--card);border:1px solid var(--line);border-left-width:4px;border-radius:10px;padding:14px 16px;margin-bottom:10px}
-  .qcard.t-na_check{border-left-color:var(--blue)} .qcard.t-actual_check{border-left-color:var(--amber)}
+  .qcard.t-na_check{border-left-color:var(--blue)} .qcard.t-actual_check{border-left-color:var(--amber)} .qcard.t-screening{border-left-color:var(--teal)}
   .qhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
   .badge{font-size:11px;font-weight:700;border-radius:6px;padding:2px 8px;color:#fff}
-  .b-na_check{background:var(--blue)} .b-actual_check{background:var(--amber)}
+  .b-na_check{background:var(--blue)} .b-actual_check{background:var(--amber)} .b-screening{background:var(--teal)}
   .src{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:1px 7px;color:var(--sub)}
   .conf{font-size:11px;font-weight:700}
   .conf.high{color:var(--teal)} .conf.mid{color:var(--amber)} .conf.low{color:var(--red)}
@@ -56,9 +56,8 @@
   .multirow label{font-size:13px;cursor:pointer}
   .preview{font-size:12px;margin-top:8px;color:var(--sub)}
   .preview .act{display:inline-block;font-weight:700;font-size:11px;border-radius:5px;padding:0 6px;margin:0 3px}
-  .act.NA{background:#e7f4f2;color:var(--teal)} .act.達成{background:#eaf1f8;color:var(--blue)}
-  .act.要評価{background:#fdf2e0;color:var(--amber)} .act.不明{background:#eef2f6;color:var(--sub)}
-  .act.あり{background:#eaf1f8;color:var(--blue)} .act.なし{background:#fdeaea;color:var(--red)}
+  .act.NA{background:#e7f4f2;color:var(--teal)} .act.適合{background:#eaf1f8;color:var(--blue)}
+  .act.評価中{background:#eef2f6;color:var(--sub)} .act.不適合{background:#fdeaea;color:var(--red)}
   .preview .line{margin:2px 0} .preview .line b{color:var(--ink);font-weight:600;display:inline-block;min-width:3.5em}
   .legacy{color:#b07400;font-size:12px;margin-top:6px}
   .sticky{position:sticky;top:14px}
@@ -67,9 +66,9 @@
   th{color:var(--sub);font-weight:600}
   select{font:inherit;border:1px solid var(--line);border-radius:6px;padding:2px 4px;font-size:12px}
   .st{font-weight:700;border-radius:5px;padding:1px 7px;font-size:11px}
-  .st.達成{background:#eaf1f8;color:var(--blue)} .st.一部達成{background:#fff5e0;color:#b07400}
-  .st.未達成{background:#fdeaea;color:var(--red)} .st.NA{background:#e7f4f2;color:var(--teal)}
-  .st.不明{background:#eef2f6;color:var(--sub)} .st.要評価{background:#fdf2e0;color:var(--amber)}
+  .st.適合{background:#eaf1f8;color:var(--blue)} .st.一部適合{background:#fff5e0;color:#b07400}
+  .st.不適合{background:#fdeaea;color:var(--red)} .st.NA{background:#e7f4f2;color:var(--teal)}
+  .st.評価中{background:#eef2f6;color:var(--sub)}
   .counts{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px}
   .counts span{font-size:12px;background:#fff;border:1px solid var(--line);border-radius:6px;padding:2px 8px}
   .spinner{display:inline-block;width:14px;height:14px;border:2px solid #cdd6df;border-top-color:var(--teal);border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px}
@@ -123,7 +122,7 @@
       <div id="docRequestList" style="margin-top:8px"></div>
     </div>
 
-    <div class="note">このワークベンチが<b>ヒアリングの実施面</b>です。各質問の下に、<b>はい／いいえ それぞれの意味と次の一歩</b>を表示しています。回答は、規程・文書／実際の運用／証跡・記録 などの<b>判定材料のひとつ</b>として記録され、<b>達成状況は保存時に必要な材料をそろえて決まります</b>（右の値は目安。回答で直接上書きはしません）。対象外を確かめる質問は <b>N/A</b> を確定します。<b>「不明」は要確認</b>のまま残り、最終値は専門家が上書きできます。保存すると、各基準の<b>「ヒアリング記録」に質問・回答・次の一歩</b>が残ります。</div>
+    <div class="note">このワークベンチは<b>スクリーニング</b>です。回答だけで適合にはしません。<b>「いいえ」は不適合</b>、<b>「はい」「分からない」は評価中</b>のままで、規程解析、導入済みサービスの確認、深掘りの質問に進みます。対象外を確かめる質問は <b>N/A</b> を確定します。最終値は専門家が上書きできます。保存すると、各基準の<b>「ヒアリング記録」に質問と回答</b>が残ります。</div>
 
     <div class="grid">
       <div>
@@ -134,7 +133,7 @@
         <div id="cards"></div>
       </div>
       <div class="sticky">
-        <h2>③ 達成状況（自動算出）</h2>
+        <h2>③ 適合状況（自動算出）</h2>
         <div class="counts" id="counts"></div>
         <div class="panel" style="padding:8px;max-height:70vh;overflow:auto">
           <table id="summary"><thead><tr><th>基準</th><th>状況</th><th>上書き</th></tr></thead><tbody></tbody></table>
@@ -151,8 +150,9 @@
 
 <script>
 const CF = 'https://asia-northeast1-scs-star3-service.cloudfunctions.net';
-const LEVELS = ['達成','一部達成','未達成','N/A','不明','要評価'];
-const RANK = {'達成':5,'N/A':4,'一部達成':3,'未達成':3,'要評価':2,'不明':1};
+const LEVELS = ['適合','一部適合','不適合','N/A','評価中'];
+// 1つの基準に複数の質問が紐づくときに残す値。N/A は「いいえ」より強い。
+const RANK = {'N/A':4,'適合':3,'一部適合':3,'不適合':2,'評価中':1};
 
 // URLパラメータから認証情報を取得
 const _params = new URLSearchParams(location.search);
@@ -221,7 +221,7 @@ async function generate() {
     const distillMsg = (d && d.distilled)
       ? ` ／ 面談記録が長文のため要点蒸留して処理（${d.originalLength}字→${d.distilledLength}字）`
       : '';
-    setStatus(`生成しました（台本${PROFILE.hearing_script.length}問）。回答を記録してください。${notionMsg}${distillMsg}`);
+    setStatus(`生成しました（質問${PROFILE.hearing_script.length}問）。回答を記録してください。${notionMsg}${distillMsg}`);
   } catch(e) {
     setStatus('エラー: ' + e.message, true);
   } finally {
@@ -243,7 +243,9 @@ async function loadExisting() {
       Object.assign(OVERRIDES, j.decisions.overrides || {});
     }
     render();
-    setStatus(`前回の結果を読み込みました（台本${PROFILE.hearing_script.length}問）。`);
+    setStatus(isScreeningScript()
+      ? `前回の結果を読み込みました（質問${PROFILE.hearing_script.length}問）。`
+      : '前回の台本は以前の形式です。回答は記録できますが、判定には使いません。面談記録から台本を作り直してください。', !isScreeningScript());
   } catch(e) {
     setStatus('エラー: ' + e.message, true);
   }
@@ -301,13 +303,23 @@ function renderProfile() {
     '</span></div>';
 }
 
+function isScreeningScript() { return (PROFILE.hearing_script || []).some(isScreening); }
+function isScreening(q) { return q.type === 'screening'; }
+// 対象外の質問が「いいえ」なら聞かない代表の質問（質問13など）
+function isHidden(q) { return (q.skip_if_no || []).some(id => ANSWERS[id] === 'no'); }
+function visibleQuestions() { return (PROFILE.hearing_script || []).filter(q => !isHidden(q)); }
+const TYPE_LABEL = { na_check: '対象外の確認', screening: '代表の質問', actual_check: '共通の質問' };
+
 function renderCards() {
-  const h = PROFILE.hearing_script || [];
+  const h = visibleQuestions();
+  const skips = (PROFILE.profile_card || {}).screening_skips || [];
   document.getElementById('qcount').textContent = h.length + '問';
-  document.getElementById('cards').innerHTML = h.map(q => {
+  document.getElementById('cards').innerHTML = (skips.length
+    ? '<div class="meta"><b>面談記録で「はい」と分かるので聞かない質問:</b> ' + skips.map(s => esc(s.id) + '（' + esc(s.basis || '') + '）').join('、') + '</div>'
+    : '') + h.map(q => {
     return '<div class="qcard t-' + esc(q.type) + '">' +
       '<div class="qhead">' +
-        '<span class="badge b-' + esc(q.type) + '">' + (q.type === 'na_check' ? 'N/A当たり' : '実態確認') + '</span>' +
+        '<span class="badge b-' + esc(q.type) + '">' + (TYPE_LABEL[q.type] || '質問') + '</span>' +
         '<span class="src">' + srcLabel(q.source) + '</span>' +
         (q.confidence ? '<span class="conf ' + esc(q.confidence) + '">確信度 ' + esc(q.confidence) + '</span>' : '') +
         '<span class="muted small">' + esc(q.id) + '</span>' +
@@ -322,7 +334,7 @@ function renderCards() {
 }
 
 async function copyQuestions() {
-  const h = PROFILE.hearing_script || [];
+  const h = visibleQuestions();
   if (!h.length) { setStatus('コピーする質問がありません', true); return; }
   const text = h.map((q, i) => `${i + 1}. ${q.question}`).join('\n');
   try {
@@ -340,42 +352,16 @@ async function copyQuestions() {
 function srcLabel(s) { return { zendesk: '面談', gyoshu_jiten: '事典', hp: 'HP', fixed: '共通設問' }[s] || s || ''; }
 function isClosed(q) { return q.answer_type ? q.answer_type === 'closed' : !!(q.on_yes && q.on_no); }
 
-// 判定材料（target_source）の専門家向け表示名。内部の「軸」「満/未」は画面に出さない（§11.10 決定3）。
-const SOURCE_LABEL = {
-  regulation: '規程・文書', hearing: '実際の運用', evidence_file: '証跡・記録',
-  org_db: '体制の記録（組織図など）', it_asset_db: 'IT資産の記録', access_db: 'アクセス権の記録',
-  vendor_db: '委託先の記録', inspection_db: '点検の記録', contact_db: '連絡先の記録',
-  backup_db: 'バックアップの記録', training_db: '教育の記録', info_asset_db: '情報資産の記録',
-};
-const ANSWER_LABEL = { yes: 'はい', no: 'いいえ', unknown: '不明' };
+const ANSWER_LABEL = { yes: 'はい', no: 'いいえ', unknown: '分からない' };
 function sideOf(q, ans) { return (ans === 'yes' ? q.on_yes : ans === 'no' ? q.on_no : null) || {}; }
-// actual_check の軸の状態は台本の axis_state だけを信じる（問いの向きに依存しない・§11.10 決定1）
-function axisStateOf(q, ans) {
-  const st = sideOf(q, ans).axis_state;
-  return (st === '満' || st === '未') ? st : null;
-}
-// 旧形式の台本（axis_state なし）の actual_check は向きが確定できない → 軸を自動で埋めない
-function isLegacyActual(q) {
-  if (!isClosed(q) || !q.target_source) return false;
-  return !axisStateOf(q, 'yes') || !axisStateOf(q, 'no');
-}
-// 回答の意味（はい/いいえ → 何がわかるか）。kind は表示色、text は記録にも使う文言
+// 回答の意味（記録にも使う文言）。kind は表示色
 function meaningOf(q, ans) {
-  if (ans === 'unknown') return { kind: '不明', text: '要確認' };
+  if (ans === 'unknown') return { kind: '評価中', text: '後で確認' };
   const side = sideOf(q, ans);
   if (side.action === 'na') return { kind: 'NA', text: '対象外（N/A）' };
-  if (!q.target_source) return { kind: '要評価', text: '対象（引き続き確認）' };
-  const st = axisStateOf(q, ans);
-  const label = SOURCE_LABEL[q.target_source] || q.target_source;
-  if (!st) return { kind: '不明', text: `要確認（${label}：回答の向きが未設定の台本）` };
-  return st === '満' ? { kind: 'あり', text: `${label}：あり` } : { kind: 'なし', text: `${label}：なし（要整備）` };
-}
-// 次の一歩（台本の note）。na の記録用メモ（「〜をN/Aとして記録。」）は次の一歩ではないので出さない
-function nextStepOf(q, ans) {
-  if (ans === 'unknown') return '';
-  const side = sideOf(q, ans);
-  if (side.action === 'na' || !q.target_source || !axisStateOf(q, ans)) return '';
-  return (side.note || '').trim();
+  if (side.action === 'fail') return { kind: '不適合', text: '不適合' };
+  if (isScreening(q)) return { kind: '評価中', text: '評価中（規程解析・導入済みサービスの確認・深掘りの質問へ）' };
+  return { kind: '評価中', text: '対象（引き続き確認）' };
 }
 
 function answerControl(q) {
@@ -383,20 +369,17 @@ function answerControl(q) {
   if (isClosed(q)) {
     const ans = ANSWERS[q.id];
     const line = (a) => {
-      const m = meaningOf(q, a), nx = nextStepOf(q, a);
-      return '<div class="line"><b>' + ANSWER_LABEL[a] + ' →</b><span class="act ' + stClass(m.kind) + '">' + esc(m.text) + '</span>' +
-        (nx ? '<span class="muted">次の一歩：' + esc(nx) + '</span>' : '') + '</div>';
+      const m = meaningOf(q, a);
+      return '<div class="line"><b>' + ANSWER_LABEL[a] + ' →</b><span class="act ' + stClass(m.kind) + '">' + esc(m.text) + '</span></div>';
     };
     return '<div class="ans">' +
         '<button class="' + (ans === 'yes' ? 'on-yes' : '') + '" onclick="answer(\'' + q.id + '\',\'yes\')">はい</button>' +
         '<button class="' + (ans === 'no'  ? 'on-no'  : '') + '" onclick="answer(\'' + q.id + '\',\'no\')">いいえ</button>' +
-        '<button class="' + (ans === 'unknown' ? 'on-unknown' : '') + '" onclick="answer(\'' + q.id + '\',\'unknown\')">不明</button>' +
+        '<button class="' + (ans === 'unknown' ? 'on-unknown' : '') + '" onclick="answer(\'' + q.id + '\',\'unknown\')">分からない</button>' +
       '</div>' +
-      '<div class="preview">' + line('yes') + line('no') +
+      '<div class="preview">' + line('yes') + line('no') + line('unknown') +
         '<div class="muted">（' + n + '基準に反映）</div></div>' +
-      (isLegacyActual(q)
-        ? '<div class="legacy">⚠ この台本は回答の向きが設定されていない旧形式です。回答は記録しますが達成状況には自動反映しません。必要なら右の上書きで確定してください。</div>'
-        : '');
+      '';
   }
   if (isMulti(q)) return multiControl(q);
   const txt = TEXT[q.id] || '';
@@ -407,7 +390,7 @@ function answerControl(q) {
         '<button class="optchip" onclick="fillOpen(\'' + q.id + '\',this.textContent)">' + esc(o) + '</button>'
       ).join('') + '</div>' : '') +
       '<input type="text" class="opentext" value="' + esc(txt) + '" placeholder="回答を記入…" oninput="openAnswer(\'' + q.id + '\',this.value)">' +
-      '<div class="preview muted">回答後、右の達成状況で ' + n + '基準を <span class="act 要評価">要評価</span> として専門家が確定</div>' +
+      '<div class="preview muted">記録として残します。判定は変わりません（' + n + '基準）</div>' +
     '</div>';
 }
 
@@ -429,7 +412,7 @@ function multiControl(q) {
           (on && o !== MULTI_NONE ? '<input type="text" class="opentext" value="' + esc(sel[o] || '') + '" placeholder="' + (o === 'その他' ? '内容と委託先・相談先' : '委託先・相談先の名前') + '" oninput="multiDetail(' + qi + ',' + oi(o) + ',this.value)">' : '') +
         '</div>';
       }).join('') +
-      '<div class="preview muted">回答後、右の達成状況で ' + n + '基準を <span class="act 要評価">要評価</span> として専門家が確定</div>' +
+      '<div class="preview muted">記録として残します。判定は変わりません（' + n + '基準）</div>' +
     '</div>';
 }
 function toggleMulti(qid, opt, on) {
@@ -458,16 +441,16 @@ function openAnswer(qid, val) { TEXT[qid] = val; recompute(); }
 
 function resolve() {
   const map = {};
-  for (const q of (PROFILE.hearing_script || [])) {
+  for (const q of visibleQuestions()) {
     let status;
     if (isClosed(q)) {
       const ans = ANSWERS[q.id];
       if (!ans) continue;
-      if (ans === 'unknown') status = '不明';
-      else status = sideOf(q, ans).action === 'na' ? 'N/A' : '要評価'; // 達成は保存時の合成で決まる
+      const action = sideOf(q, ans).action;
+      status = action === 'na' ? 'N/A' : action === 'fail' ? '不適合' : '評価中';
     } else {
       if (!openText(q)) continue;
-      status = '要評価';
+      status = '評価中';
     }
     for (const c of (q.linked_criteria || [])) {
       if (!map[c]) map[c] = { status, byQuestions: [q.id] };
@@ -501,12 +484,12 @@ function recompute() {
 
   const cnt = {};
   cnos.forEach(c => { const s = map[c].status; cnt[s] = (cnt[s] || 0) + 1; });
-  const answered = (PROFILE.hearing_script || []).filter(q =>
+  const answered = visibleQuestions().filter(q =>
     isClosed(q) ? ANSWERS[q.id] : openText(q)
   ).length;
   document.getElementById('counts').innerHTML =
     Object.keys(cnt).map(s => '<span><b class="st ' + stClass(s) + '">' + s + '</b> ' + cnt[s] + '</span>').join('') +
-    '<span>回答 ' + answered + '/' + (PROFILE.hearing_script || []).length + '問</span>';
+    '<span>回答 ' + answered + '/' + visibleQuestions().length + '問</span>';
 }
 
 function setOverride(c, val) {
@@ -514,46 +497,38 @@ function setOverride(c, val) {
   recompute();
 }
 
-// 回答から「基準×判定ソース軸」の状態(満/未/不明)とN/A集合を組み立てる（統合判定モデル §11.4）。
-// サーバ側 resolveGap がこれを合成して 達成レベル＋ギャップ種別 を確定する。
-// 専門家の手動上書き(OVERRIDES)がある基準は axes から外し、resolved経由で上書き値をそのまま書く（上書きは全軸に優先）。
-function buildAxes() {
-  const axes = {};
+// 回答から N/A の基準と「いいえ」の基準を組み立てる。判定はサーバ側で確定する（D-034）。
+// 専門家の手動上書き(OVERRIDES)がある基準は除き、上書きの値をそのまま書く（上書きはすべてに優先）。
+function buildScreening() {
   const naReasons = {};                    // 基準 → N/A確定の根拠（ヒアリング由来）
-  for (const q of (PROFILE.hearing_script || [])) {
-    if (!isClosed(q)) continue;            // open質問は軸を埋めない（→要評価のまま）
+  const failed = new Set();
+  for (const q of visibleQuestions()) {
+    if (!isClosed(q)) continue;
     const ans = ANSWERS[q.id];
     if (!ans) continue;
-    const ts = q.target_source || null;
+    const act = sideOf(q, ans);
     for (const c of (q.linked_criteria || [])) {
-      if (OVERRIDES[c]) continue;          // 上書き済みは合成対象外
-      const act = (ans === 'yes' ? q.on_yes : ans === 'no' ? q.on_no : null) || {};
-      if (act.action === 'na') {           // 適用外確定＋根拠を記録
+      if (OVERRIDES[c]) continue;
+      if (act.action === 'na') {
         const note = (act.note || '').trim();
-        naReasons[c] = `ヒアリング確認：「${q.question}」→${ans === 'yes' ? 'はい' : 'いいえ'}`
-          + (note ? `（${note}）` : '');
-        continue;
+        naReasons[c] = `ヒアリング確認：「${q.question}」→${ANSWER_LABEL[ans]}` + (note ? `（${note}）` : '');
+      } else if (act.action === 'fail') {
+        failed.add(c);
       }
-      if (!ts) continue;                   // 軸が無ければ満/未を立てない
-      let state;
-      if (ans === 'unknown') state = '不明';
-      else state = axisStateOf(q, ans);    // 台本が明示した向きだけを使う（§11.10 決定1）
-      if (!state) continue;                // 旧形式の台本は向きが確定できないので埋めない
-      (axes[c] = axes[c] || {})[ts] = state;
     }
   }
-  return { axes, na: Object.keys(naReasons), naReasons };
+  return { na: Object.keys(naReasons), naReasons, screened_no: [...failed].filter(c => !naReasons[c]) };
 }
 
 // 回答済みの質問を「ヒアリング記録」用に並べる（記録文の組み立てはサーバ側・§11.10 決定4）
 function buildHearingLog() {
   const log = [];
-  for (const q of (PROFILE.hearing_script || [])) {
+  for (const q of visibleQuestions()) {
     const criteria = q.linked_criteria || [];
     if (isClosed(q)) {
       const ans = ANSWERS[q.id];
       if (!ans) continue;
-      log.push({ question: q.question, answer: ANSWER_LABEL[ans], meaning: meaningOf(q, ans).text, next: nextStepOf(q, ans), criteria });
+      log.push({ question: q.question, answer: ANSWER_LABEL[ans], meaning: meaningOf(q, ans).text, next: '', criteria });
     } else {
       const txt = openText(q);
       if (!txt) continue;
@@ -564,16 +539,11 @@ function buildHearingLog() {
 }
 
 async function saveDecisions() {
-  const resolved = resolve();
-  const { axes, na, naReasons } = buildAxes();
   const decisions = {
     answers: ANSWERS,
     text: TEXT,
     overrides: OVERRIDES,
-    axes,
-    na,
-    naReasons,
-    resolved: Object.fromEntries(Object.entries(resolved).map(([c, v]) => [c, v.status])),
+    ...buildScreening(),
     hearing_log: buildHearingLog(),
   };
   try {
@@ -583,7 +553,7 @@ async function saveDecisions() {
       no_property: 'ヒアリング記録: このチェックリストには「ヒアリング記録」欄がないため未記録',
     }[j.hearing_record_status] || '';
     document.getElementById('saveMsg').textContent =
-      `保存しました — Notion更新: ${j.notion_updated}件 スキップ: ${j.skipped}件（要評価/不明）` + (hr ? ` ／ ${hr}` : '');
+      `保存しました — Notion更新: ${j.notion_updated}件 スキップ: ${j.skipped}件` + (hr ? ` ／ ${hr}` : '');
   } catch(e) {
     document.getElementById('saveMsg').textContent = '保存エラー: ' + e.message;
   }

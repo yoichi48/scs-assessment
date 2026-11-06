@@ -441,9 +441,9 @@ async function showSummary(){
     // チェックリスト更新サマリの生成
     const cbc = assessResult?.write_result?.changes_by_category || {};
     const totalChanged = assessResult?.write_result?.updated || 0;
-    const LV_ICON  = {'達成':'●','一部達成':'◐','未達成':'✕'};
-    const LV_COLOR = {'達成':'var(--ok-tx)','一部達成':'var(--warn-tx)','未達成':'var(--err-tx)'};
-    const LV_ORDER = ['達成','一部達成','未達成'];
+    const LV_ICON  = {'適合':'●','一部適合':'◐','不適合':'✕'};
+    const LV_COLOR = {'適合':'var(--ok-tx)','一部適合':'var(--warn-tx)','不適合':'var(--err-tx)'};
+    const LV_ORDER = ['適合','一部適合','不適合'];
     let changeHtml = '';
     if(totalChanged > 0){
       const rows = Object.entries(cbc).map(([cat, lvs])=>{

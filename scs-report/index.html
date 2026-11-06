@@ -211,7 +211,7 @@ async function generateReport() {
     const warnEl = document.getElementById('task-warning');
     const cov = data.task_coverage;
     if (cov && cov.uncovered > 0) {
-      warnEl.textContent = `⚠️ 「未達成」「一部達成」の評価基準 ${cov.total_gaps} 件のうち、${cov.uncovered} 件にタスクが紐づいていません。レポートの対応タスク欄が空欄になります。タスクを再生成してからレポートを出力することを推奨します。`;
+      warnEl.textContent = `⚠️ 「不適合」「一部適合」の評価基準 ${cov.total_gaps} 件のうち、${cov.uncovered} 件にタスクが紐づいていません。レポートの対応タスク欄が空欄になります。タスクを再生成してからレポートを出力することを推奨します。`;
       warnEl.style.display = 'block';
     } else {
       warnEl.style.display = 'none';

@@ -183,7 +183,7 @@ function addRow(listId, value) {
   const input = document.createElement('input');
   input.type = 'text';
   input.value = value || '';
-  input.placeholder = listId === 'gap-list' ? '例: アクセス制御：未達成3件' : '例: 特権ID管理の整備';
+  input.placeholder = listId === 'gap-list' ? '例: アクセス制御：不適合3件' : '例: 特権ID管理の整備';
   const btn = document.createElement('button');
   btn.type = 'button'; btn.textContent = '×'; btn.title = '削除';
   btn.onclick = () => row.remove();

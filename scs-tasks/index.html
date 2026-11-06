@@ -84,7 +84,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino San
   <div class="card">
     <div class="logo">
       <h1>📋 SCS★3 タスク一覧の生成</h1>
-      <p>未達成・一部達成の評価基準からタスクを自動提案します</p>
+      <p>不適合・一部適合の評価基準からタスクを自動提案します</p>
     </div>
 
     <!-- 認証フォーム -->
@@ -190,7 +190,7 @@ async function proposeTasks() {
     document.getElementById('loading').style.display = 'none';
 
     if (data.tasks.length === 0) {
-      showMsg('info', data.message || '未達成の評価基準がありません。');
+      showMsg('info', data.message || '不適合の評価基準がありません。');
       document.getElementById('propose-btn').disabled = false;
       return;
     }
