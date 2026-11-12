@@ -148,7 +148,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans",san
 
 <script>
 const CF = 'https://asia-northeast1-scs-star3-service.cloudfunctions.net';
-let st = { tenantId: null, company: null, uploadedRegs: [] };
+let st = { tenantId: null, company: null, uploadedRegs: [], tok: '', exp: '', email: '' };
 
 async function apiPost(endpoint, body, timeoutMs) {
   const timeout = timeoutMs || 120000;
@@ -200,8 +200,11 @@ async function init() {
   const exp = params.get('exp');
 
   if (tid && tok && exp) {
-    // トークン自動認証は不可（upload.htmlはメール認証のみ）
-    // ただしtenant_idを先行入力しておく
+    // ログインはメール認証（getTenantInfo）。案内リンクのトークンは、規程の解析（analyzeRegulation）の
+    // 呼び出しに付けて送る（サーバーがトークンで呼び出し元を確認する）。
+    // tenant_idは先行入力しておく
+    st.tok = tok;
+    st.exp = exp;
     document.getElementById('auth-tid').value = tid;
     document.getElementById('auth-email').focus();
   }
@@ -221,6 +224,7 @@ document.getElementById('auth-btn').addEventListener('click', async () => {
   try {
     const data = await apiPost('getTenantInfo', { tenant_id: tid, email });
     st.tenantId = tid;
+    st.email    = email;
     st.company  = data.company;
     st.uploadedRegs = data.analyzed_regulations || [];
 
@@ -308,6 +312,7 @@ document.getElementById('upload-btn').addEventListener('click', async () => {
     statusMsg.textContent = '規程テキストを抽出中...';
     const estimate = await apiPost('analyzeRegulation', {
       tenant_id: st.tenantId,
+      tok: st.tok, exp: st.exp, email: st.email,
       regulation_type: 'その他',
       file_name: file.name,
       file_base64: base64,
@@ -376,6 +381,7 @@ document.getElementById('upload-btn').addEventListener('click', async () => {
 
     const result = await apiPost('analyzeRegulation', {
       tenant_id: st.tenantId,
+      tok: st.tok, exp: st.exp, email: st.email,
       regulation_type: 'その他',
       file_name: file.name,
       file_base64: base64,
