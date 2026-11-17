@@ -163,6 +163,7 @@ const EXP       = _params.get('exp') || '';
 let PROFILE = null;
 const ANSWERS  = {};
 const TEXT     = {};
+const NOTES    = {};   // はい/いいえ/分からないの質問に添える補足（自由入力）。判定には使わない
 const OVERRIDES = {};
 
 // 認証チェック
@@ -214,7 +215,7 @@ async function generate() {
       checklist_annotations: j.checklist_annotations || [],
       document_requests: j.document_requests || [],
     };
-    [ANSWERS, TEXT, OVERRIDES].forEach(m => Object.keys(m).forEach(k => delete m[k]));
+    [ANSWERS, TEXT, NOTES, OVERRIDES].forEach(m => Object.keys(m).forEach(k => delete m[k]));
     render();
     const notionMsg = j.notion_written > 0 ? ` Notion注釈${j.notion_written}件書込済` : '';
     const d = j.interview_distill;
@@ -236,10 +237,11 @@ async function loadExisting() {
     const j = await cfPost('getChecklistWorkbench', {});
     if (!j.profile) { setStatus('前回の buildProfile 結果がありません。上記から台本を生成してください。'); return; }
     PROFILE = j.profile;
-    [ANSWERS, TEXT, OVERRIDES].forEach(m => Object.keys(m).forEach(k => delete m[k]));
+    [ANSWERS, TEXT, NOTES, OVERRIDES].forEach(m => Object.keys(m).forEach(k => delete m[k]));
     if (j.decisions) {
       Object.assign(ANSWERS,   j.decisions.answers   || {});
       Object.assign(TEXT,      j.decisions.text      || {});
+      Object.assign(NOTES,     j.decisions.notes     || {});
       Object.assign(OVERRIDES, j.decisions.overrides || {});
     }
     render();
@@ -314,9 +316,18 @@ function renderCards() {
   const h = visibleQuestions();
   const skips = (PROFILE.profile_card || {}).screening_skips || [];
   document.getElementById('qcount').textContent = h.length + '問';
-  document.getElementById('cards').innerHTML = (skips.length
-    ? '<div class="meta"><b>面談記録で「はい」と分かるので聞かない質問:</b> ' + skips.map(s => esc(s.id) + '（' + esc(s.basis || '') + '）').join('、') + '</div>'
-    : '') + h.map(q => {
+  // 省いた質問。kind が無い（以前の台本）ものは「はい」と分かる質問として扱う
+  const skipsYes = skips.filter(s => s.kind !== 'not_ready');
+  const skipsNotReady = skips.filter(s => s.kind === 'not_ready');
+  const skipLine = (list) => list.map(s => esc(s.id) + '（' + esc(s.basis || '') + '）').join('、');
+  document.getElementById('cards').innerHTML =
+    (skipsYes.length
+      ? '<div class="meta"><b>面談記録で「はい」と分かるので聞かない質問:</b> ' + skipLine(skipsYes) + '</div>'
+      : '') +
+    (skipsNotReady.length
+      ? '<div class="meta"><b>面談記録から、まだ整っていないと分かり、聞く意味が薄いので省いた質問（評価中のまま。面談で確認）:</b> ' + skipLine(skipsNotReady) + '</div>'
+      : '') +
+    h.map(q => {
     return '<div class="qcard t-' + esc(q.type) + '">' +
       '<div class="qhead">' +
         '<span class="badge b-' + esc(q.type) + '">' + (TYPE_LABEL[q.type] || '質問') + '</span>' +
@@ -379,7 +390,11 @@ function answerControl(q) {
       '</div>' +
       '<div class="preview">' + line('yes') + line('no') + line('unknown') +
         '<div class="muted">（' + n + '基準に反映）</div></div>' +
-      '';
+      // 補足（自由入力）。クライアントの返答をそのまま書き残す。判定は上のボタンだけで決まり、補足は変えない
+      '<div class="openans">' +
+        '<input type="text" class="opentext" value="' + esc(NOTES[q.id] || '') + '" placeholder="補足（任意）：返答の言葉や事情をそのまま記入…" oninput="noteAnswer(\'' + q.id + '\',this.value)">' +
+        '<div class="preview muted">ヒアリング記録に残します。判定は変わりません。はい／いいえ／分からないを選んだときに記録されます</div>' +
+      '</div>';
   }
   if (isMulti(q)) return multiControl(q);
   const txt = TEXT[q.id] || '';
@@ -436,6 +451,7 @@ function answer(qid, val) {
   ANSWERS[qid] = (ANSWERS[qid] === val) ? undefined : val;
   renderCards(); recompute();
 }
+function noteAnswer(qid, val) { if (val) NOTES[qid] = val; else delete NOTES[qid]; }  // 再描画しない（入力中の欄を保つ）
 function fillOpen(qid, val) { TEXT[qid] = val; renderCards(); recompute(); }
 function openAnswer(qid, val) { TEXT[qid] = val; recompute(); }
 
@@ -528,7 +544,7 @@ function buildHearingLog() {
     if (isClosed(q)) {
       const ans = ANSWERS[q.id];
       if (!ans) continue;
-      log.push({ question: q.question, answer: ANSWER_LABEL[ans], meaning: meaningOf(q, ans).text, next: '', criteria });
+      log.push({ question: q.question, answer: ANSWER_LABEL[ans], note: (NOTES[q.id] || '').trim(), meaning: meaningOf(q, ans).text, next: '', criteria });
     } else {
       const txt = openText(q);
       if (!txt) continue;
@@ -542,6 +558,7 @@ async function saveDecisions() {
   const decisions = {
     answers: ANSWERS,
     text: TEXT,
+    notes: NOTES,
     overrides: OVERRIDES,
     ...buildScreening(),
     hearing_log: buildHearingLog(),
