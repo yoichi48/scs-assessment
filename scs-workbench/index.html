@@ -76,6 +76,15 @@
   .note{background:#fff8e6;border:1px solid #f0e2bd;border-radius:8px;padding:8px 12px;font-size:12px;color:#7a6a3a;margin:8px 0}
   .savebar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);padding:10px 20px;display:flex;justify-content:flex-end;gap:10px;align-items:center}
   .err-banner{background:#fdeaea;border:1px solid #f5c6c6;border-radius:8px;padding:10px 14px;color:var(--red);margin:8px 0}
+  .qcard.t-group{border-left-color:var(--teal)}
+  .item{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:6px 0;border-top:1px solid var(--line)}
+  .item:first-of-type{border-top:none}
+  .item .lbl{flex:1 1 260px;font-size:13.5px}
+  .item .ans{margin-top:0}
+  .prefill{font-size:11.5px;color:var(--teal);flex-basis:100%;margin-left:2px}
+  .item.off{opacity:.45}
+  .subq{font-size:12px;color:var(--sub);margin-top:8px}
+  button.done{background:var(--teal);color:#fff;border-color:var(--teal)}
 </style>
 </head>
 <body>
@@ -116,7 +125,7 @@
     <div class="panel" id="docRequests" style="display:none">
       <div class="row" style="justify-content:space-between;align-items:baseline">
         <strong>📄 徴求する書類 <span class="muted small">（ヒアリング内容から自動抽出）</span></strong>
-        <button onclick="copyDocumentRequests()">📋 書類リストをコピー</button>
+        <button onclick="copyDocumentRequests(this)">📋 書類リストをコピー</button>
       </div>
       <div class="small muted" style="margin-top:4px">「共通」は全社に依頼する書類です。それ以外は、面談記録から「既に持っていそう」と推察した書類です。ヒアリング前にクライアントへ依頼する目安としてご利用ください（推測のため、実際の依頼前に個別にご確認ください）。</div>
       <div id="docRequestList" style="margin-top:8px"></div>
@@ -128,7 +137,7 @@
       <div>
         <div class="row" style="justify-content:space-between;align-items:baseline;border-bottom:2px solid var(--line);padding-bottom:6px;margin:24px 0 10px">
           <h2 style="margin:0;padding:0;border:none">② ヒアリング台本 <span class="muted small" id="qcount"></span></h2>
-          <button onclick="copyQuestions()">📋 質問リストをコピー</button>
+          <button onclick="copyQuestions(this)">📋 質問リストをコピー</button>
         </div>
         <div id="cards"></div>
       </div>
@@ -148,6 +157,7 @@
   <button class="primary" onclick="saveDecisions()">④ 決定を保存（Notionへ書き戻し）</button>
 </div>
 
+<script src="hearing-form.js"></script>
 <script>
 const CF = 'https://asia-northeast1-scs-star3-service.cloudfunctions.net';
 const LEVELS = ['適合','一部適合','不適合','N/A','評価中'];
@@ -212,10 +222,13 @@ async function generate() {
     PROFILE = {
       profile_card: j.profile_card,
       hearing_script: j.hearing_script || [],
+      hearing_form: j.hearing_form || null,
       checklist_annotations: j.checklist_annotations || [],
       document_requests: j.document_requests || [],
     };
     [ANSWERS, TEXT, NOTES, OVERRIDES].forEach(m => Object.keys(m).forEach(k => delete m[k]));
+    if (isGrouped()) HearingForm.applyPrefill(PROFILE.hearing_form.prefill, ANSWERS);
+    derive();
     render();
     const notionMsg = j.notion_written > 0 ? ` Notion注釈${j.notion_written}件書込済` : '';
     const d = j.interview_distill;
@@ -243,7 +256,11 @@ async function loadExisting() {
       Object.assign(TEXT,      j.decisions.text      || {});
       Object.assign(NOTES,     j.decisions.notes     || {});
       Object.assign(OVERRIDES, j.decisions.overrides || {});
+    } else if (isGrouped()) {
+      // 保存がまだなら、前もって入れる答えを入れる（保存した後は、保存した答えを使う）
+      HearingForm.applyPrefill(PROFILE.hearing_form.prefill, ANSWERS);
     }
+    derive();
     render();
     setStatus(isScreeningScript()
       ? `前回の結果を読み込みました（質問${PROFILE.hearing_script.length}問）。`
@@ -279,10 +296,15 @@ function renderDocumentRequests() {
   ).join('');
 }
 
-async function copyDocumentRequests() {
+async function copyDocumentRequests(btn) {
   const items = PROFILE.document_requests || [];
-  if (!items.length) { setStatus('コピーする書類がありません', true); return; }
+  if (!items.length) { flashButton(btn, 'コピーする書類がありません'); return; }
   const text = items.map((it, i) => `${i + 1}. ${it.name}`).join('\n');
+  await writeClipboard(text);
+  flashButton(btn, `✓ コピーしました（${items.length}件）`);
+}
+
+async function writeClipboard(text) {
   try {
     await navigator.clipboard.writeText(text);
   } catch (e) {
@@ -292,7 +314,15 @@ async function copyDocumentRequests() {
     document.execCommand('copy');
     document.body.removeChild(ta);
   }
-  setStatus(`書類リストをコピーしました（${items.length}件）`);
+}
+
+// 押したボタンの文字を2秒だけ変えて、押した場所でコピーの結果が見えるようにする
+function flashButton(btn, msg) {
+  if (!btn) { setStatus(msg); return; }
+  if (!btn.dataset.label) btn.dataset.label = btn.textContent;
+  btn.textContent = msg; btn.classList.add('done');
+  clearTimeout(btn._flash);
+  btn._flash = setTimeout(() => { btn.textContent = btn.dataset.label; btn.classList.remove('done'); }, 2000);
 }
 
 function renderProfile() {
@@ -312,7 +342,69 @@ function isHidden(q) { return (q.skip_if_no || []).some(id => ANSWERS[id] === 'n
 function visibleQuestions() { return (PROFILE.hearing_script || []).filter(q => !isHidden(q)); }
 const TYPE_LABEL = { na_check: '対象外の確認', screening: '代表の質問', actual_check: '共通の質問' };
 
+// まとめた形の質問リスト（D-042）。以前の台本（hearing_form なし）は1問ずつの表示のまま
+function isGrouped() { return !!(PROFILE && PROFILE.hearing_form && (PROFILE.hearing_form.groups || []).length); }
+function groups() { return isGrouped() ? PROFILE.hearing_form.groups : []; }
+function prefillOf() { return (isGrouped() && PROFILE.hearing_form.prefill) || {}; }
+function questionById(id) { return (PROFILE.hearing_script || []).find(q => q.id === id); }
+function derive() { if (isGrouped()) HearingForm.deriveAnswers(groups(), ANSWERS, TEXT); }
+// 項目の質問がすべて、対象外の答え（skip_if_no）で聞かなくてよくなっているか
+function itemHidden(p) { return p.ids.every(id => { const q = questionById(id); return q && isHidden(q); }); }
+
+function itemControl(g, p) {
+  const ans = HearingForm.itemAnswer(p, ANSWERS);
+  const key = esc(JSON.stringify([g.id, p.ids]));
+  const pf = prefillOf();
+  const prefilled = HearingForm.isPrefilled(p, pf) && ans === 'yes';
+  const off = itemHidden(p) || (g.parts.some(x => x.type === 'none') && HearingForm.noneChecked(g, TEXT));
+  const btn = (v, label) => '<button class="' + (ans === v ? 'on-' + v : '') + '"' + (off ? ' disabled' : '') +
+    ' onclick="answerItem(' + key + ',\'' + v + '\')">' + label + '</button>';
+  const crit = [...new Set(p.ids.flatMap(id => (questionById(id) || {}).linked_criteria || []))];
+  return '<div class="item' + (off ? ' off' : '') + '">' +
+      '<span class="lbl">' + esc(p.label) + ' <span class="muted small">' + esc(p.ids.join('・')) + '（' + crit.length + '基準）</span></span>' +
+      '<span class="ans">' + btn('yes', '○ はい') + btn('no', '× いいえ') + btn('unknown', '？ 分からない') + '</span>' +
+      (prefilled ? '<span class="prefill">事前記入 ' + esc(p.ids.map(id => pf[id].basis).filter((b, i, a) => a.indexOf(b) === i).join(' ／ ')) + '</span>' : '') +
+      (p.note_label
+        ? '<input type="text" class="opentext" value="' + esc(NOTES[p.ids[0]] || '') + '" placeholder="' + esc(p.note_label) + '" oninput="noteAnswer(\'' + p.ids[0] + '\',this.value)">'
+        : '') +
+    '</div>';
+}
+
+function renderGroups() {
+  const gs = groups();
+  document.getElementById('qcount').textContent = gs.length + '問';
+  document.getElementById('cards').innerHTML = gs.map((g, i) => {
+    const body = g.parts.map(p => {
+      if (p.type === 'closed') return itemControl(g, p);
+      if (p.type === 'open') {
+        const q = questionById(p.id);
+        return q ? '<div class="subq">' + esc(q.question) + ' <span class="muted">' + esc(q.id) + '</span></div>' + answerControl(q) : '';
+      }
+      if (p.type === 'other') {
+        return '<div class="item"><span class="lbl">その他</span>' +
+          '<input type="text" class="opentext" value="' + esc(TEXT[HearingForm.OTHER(g)] || '') + '" placeholder="その他（記録に残します。判定は変わりません）" oninput="otherAnswer(\'' + g.id + '\',this.value)"></div>';
+      }
+      if (p.type === 'none') {
+        return '<div class="item"><label class="lbl"><input type="checkbox"' + (HearingForm.noneChecked(g, TEXT) ? ' checked' : '') +
+          ' onchange="noneAnswer(\'' + g.id + '\',this.checked)"> ' + esc(p.label) +
+          ' <span class="muted small">（' + esc(Object.keys(p.sets || {}).join('・')) + ' を「いいえ」＝対象外）</span></label></div>';
+      }
+      return '';
+    }).join('');
+    return '<div class="qcard t-group"><div class="qtext">' + (i + 1) + '. ' + esc(g.heading) + '</div>' + body + '</div>';
+  }).join('');
+}
+
+function answerItem(key, val) {
+  const [gid, ids] = key;
+  HearingForm.setItem({ ids }, ANSWERS, val);
+  derive(); renderCards(); recompute();
+}
+function otherAnswer(gid, val) { const k = gid + ':other'; if (val) TEXT[k] = val; else delete TEXT[k]; }  // 再描画しない
+function noneAnswer(gid, on) { const k = gid + ':none'; if (on) TEXT[k] = true; else delete TEXT[k]; derive(); renderCards(); recompute(); }
+
 function renderCards() {
+  if (isGrouped()) return renderGroups();
   const h = visibleQuestions();
   const skips = (PROFILE.profile_card || {}).screening_skips || [];
   document.getElementById('qcount').textContent = h.length + '問';
@@ -344,20 +436,16 @@ function renderCards() {
   }).join('');
 }
 
-async function copyQuestions() {
-  const h = visibleQuestions();
-  if (!h.length) { setStatus('コピーする質問がありません', true); return; }
-  const text = h.map((q, i) => `${i + 1}. ${q.question}`).join('\n');
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch (e) {
-    const ta = document.createElement('textarea');
-    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-    document.body.appendChild(ta); ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
+async function copyQuestions(btn) {
+  if (isGrouped()) {
+    await writeClipboard(HearingForm.copyText(groups(), ANSWERS, prefillOf()));
+    flashButton(btn, `✓ コピーしました（${groups().length}問）`);
+    return;
   }
-  setStatus(`質問リストをコピーしました（${h.length}問）`);
+  const h = visibleQuestions();
+  if (!h.length) { flashButton(btn, 'コピーする質問がありません'); return; }
+  await writeClipboard(h.map((q, i) => `${i + 1}. ${q.question}`).join('\n'));
+  flashButton(btn, `✓ コピーしました（${h.length}問）`);
 }
 
 function srcLabel(s) { return { zendesk: '面談', gyoshu_jiten: '事典', hp: 'HP', fixed: '共通設問' }[s] || s || ''; }
@@ -500,12 +588,21 @@ function recompute() {
 
   const cnt = {};
   cnos.forEach(c => { const s = map[c].status; cnt[s] = (cnt[s] || 0) + 1; });
-  const answered = visibleQuestions().filter(q =>
-    isClosed(q) ? ANSWERS[q.id] : openText(q)
-  ).length;
+  let answered, total, unit;
+  if (isGrouped()) {
+    // まとめた形では、答える項目（はい／いいえの項目・記述の欄）で数える
+    const parts = groups().flatMap(g => g.parts.filter(p => p.type === 'closed' || p.type === 'open'));
+    total = parts.length; unit = '項目';
+    answered = parts.filter(p => p.type === 'closed'
+      ? HearingForm.itemAnswer(p, ANSWERS)
+      : (questionById(p.id) && openText(questionById(p.id)))).length;
+  } else {
+    total = visibleQuestions().length; unit = '問';
+    answered = visibleQuestions().filter(q => isClosed(q) ? ANSWERS[q.id] : openText(q)).length;
+  }
   document.getElementById('counts').innerHTML =
     Object.keys(cnt).map(s => '<span><b class="st ' + stClass(s) + '">' + s + '</b> ' + cnt[s] + '</span>').join('') +
-    '<span>回答 ' + answered + '/' + visibleQuestions().length + '問</span>';
+    '<span>回答 ' + answered + '/' + total + unit + '</span>';
 }
 
 function setOverride(c, val) {
@@ -539,17 +636,28 @@ function buildScreening() {
 // 回答済みの質問を「ヒアリング記録」用に並べる（記録文の組み立てはサーバ側・§11.10 決定4）
 function buildHearingLog() {
   const log = [];
+  const pf = prefillOf();
   for (const q of visibleQuestions()) {
     const criteria = q.linked_criteria || [];
     if (isClosed(q)) {
       const ans = ANSWERS[q.id];
       if (!ans) continue;
-      log.push({ question: q.question, answer: ANSWER_LABEL[ans], note: (NOTES[q.id] || '').trim(), meaning: meaningOf(q, ans).text, next: '', criteria });
+      // 前もって入れた「はい」がそのまま残っていれば、その根拠を補足に残す（補足の入力があればそちらを使う）
+      const note = (NOTES[q.id] || '').trim() || (ans === 'yes' && pf[q.id] ? '事前記入（' + pf[q.id].basis + '）' : '');
+      log.push({ question: q.question, answer: ANSWER_LABEL[ans], note, meaning: meaningOf(q, ans).text, next: '', criteria });
     } else {
       const txt = openText(q);
       if (!txt) continue;
       log.push({ question: q.question, answer: txt, criteria });
     }
+  }
+  // 「その他」の記入。判定は変えず、そのまとまりの項目に紐づく基準の記録に残す
+  for (const g of groups()) {
+    const txt = (TEXT[HearingForm.OTHER(g)] || '').trim();
+    if (!txt) continue;
+    const criteria = [...new Set(g.parts.filter(p => p.type === 'closed')
+      .flatMap(p => p.ids.flatMap(id => (questionById(id) || {}).linked_criteria || [])))];
+    log.push({ question: g.heading + '（その他）', answer: txt, criteria });
   }
   return log;
 }
