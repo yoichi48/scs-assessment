@@ -179,7 +179,7 @@ function renderCustomerMissing(list) {
   const box = $('customer-missing');
   box.replaceChildren();
   if (!list || list.length === 0) { box.hidden = true; return; }
-  box.appendChild(el('div', '', '顧客情報DBに未入力の項目があります。このまま作ると、規程の中に「【担当部署名】」のような仮の文字が残ります。'));
+  box.appendChild(el('div', '', '顧客情報DBに未入力の項目があります。このまま作ると、その項目を使う規程の該当箇所に「【制定日を記入】」のような仮の文字が残ります。'));
   const ul = el('ul');
   list.forEach((l) => ul.appendChild(el('li', '', l)));
   box.appendChild(ul);
@@ -234,9 +234,6 @@ function renderList() {
           meta.appendChild(a);
         }
         label.appendChild(meta);
-      }
-      if (r.missing && r.missing.length > 0) {
-        label.appendChild(el('div', 'reg-missing', '顧客情報DBが未入力: ' + r.missing.join('、') + '（仮の文字が残ります）'));
       }
       if (working && working.baseline[r.regulation_id] !== undefined) {
         const done = issued.length > working.baseline[r.regulation_id];
