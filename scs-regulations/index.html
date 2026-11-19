@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCS★3 規程の作成</title>
+<style>
+:root {
+  --bg: #f7f8fa; --card: #fff; --primary: #2B5C8A; --primary-hover: #1e4670;
+  --text1: #2D3436; --text2: #636E72; --border: #D5D8DC;
+  --success: #477D61; --error: #9B4D4D; --warn: #8a6d2b;
+  --warnBg: #fbf6e8; --warnBorder: #e6d9b0; --bgLight: #F2F4F5;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", sans-serif;
+  background: var(--bg); color: var(--text1); min-height:100vh; display:flex; justify-content:center; padding:24px; }
+.container { width:100%; max-width:800px; }
+.card { background: var(--card); border-radius:16px; padding:28px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04); margin-bottom:16px; }
+.logo { text-align:center; margin-bottom:8px; }
+.logo h1 { font-size:20px; color: var(--primary); margin-bottom:4px; }
+.logo p { font-size:13px; color: var(--text2); line-height:1.6; }
+.company { text-align:center; font-size:13px; color: var(--text2); margin-top:6px; }
+
+.btn { padding:12px 24px; border:none; border-radius:10px; font-size:14px; font-weight:600;
+  cursor:pointer; transition: all 0.2s; }
+.btn-primary { background: var(--primary); color:#fff; width:100%; margin-top:16px; }
+.btn-primary:hover { background: var(--primary-hover); }
+.btn-primary:disabled { background: #94a3b8; cursor:not-allowed; }
+
+.msg { padding:12px 16px; border-radius:10px; font-size:13px; line-height:1.7; margin-top:12px; }
+.msg-info { background:#E8EEF4; color: var(--primary); border:1px solid #B8CDE0; }
+.msg-error { background:#fef2f2; color: var(--error); border:1px solid #fecaca; }
+.msg-success { background:#f0fdf4; color: var(--success); border:1px solid #bbf7d0; }
+.msg-warn { background: var(--warnBg); color: var(--warn); border:1px solid var(--warnBorder); }
+.msg ul { margin:6px 0 0 20px; }
+[hidden] { display:none !important; }
+
+.loading { text-align:center; padding:40px; color: var(--text2); font-size:14px; }
+.spinner { display:inline-block; width:22px; height:22px; border:3px solid var(--border);
+  border-top-color: var(--primary); border-radius:50%; animation: spin 0.8s linear infinite; margin-bottom:10px; }
+.spinner.small { width:14px; height:14px; border-width:2px; margin:0 6px 0 0; vertical-align:-2px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.list-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+.list-header h2 { font-size:16px; }
+.list-header .count { font-size:13px; color: var(--text2); }
+.select-actions { display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
+.select-actions button { padding:6px 12px; border:1px solid var(--border); border-radius:6px;
+  background:#fff; font-size:12px; cursor:pointer; color: var(--text2); }
+.select-actions button:hover { background: var(--bgLight); }
+
+.group-header { font-size:13px; font-weight:600; color: var(--primary); padding:8px 0 4px;
+  border-bottom:2px solid var(--primary); margin-top:16px; margin-bottom:4px; }
+.reg-item { display:flex; align-items:flex-start; padding:10px 8px; border-bottom:1px solid var(--border); }
+.reg-item:hover { background: var(--bgLight); }
+.reg-item input[type=checkbox] { margin-top:4px; margin-right:12px; width:18px; height:18px;
+  accent-color: var(--primary); flex-shrink:0; cursor:pointer; }
+.reg-item label { flex:1; cursor:pointer; }
+.reg-name { font-size:14px; font-weight:500; }
+.reg-id { font-size:11px; color: var(--text2); margin-left:8px; font-weight:400; }
+.reg-meta { font-size:12px; color: var(--text2); margin-top:3px; line-height:1.6; }
+.reg-meta a { color: var(--primary); }
+.reg-missing { font-size:12px; color: var(--warn); margin-top:3px; line-height:1.6; }
+.reg-state { font-size:12px; margin-top:3px; }
+.reg-state.working { color: var(--primary); }
+.reg-state.done { color: var(--success); }
+.footer { text-align:center; margin-top:20px; font-size:12px; color: var(--text2); }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <div class="logo">
+      <h1>📜 SCS★3 規程の作成</h1>
+      <p>作りたい規程を選ぶと、顧客情報DBの内容を差し込んだ Word ファイルを作成し、規程発行履歴DBに記録します。</p>
+    </div>
+    <div class="company" id="company"></div>
+
+    <div class="msg msg-error" id="fatal" hidden></div>
+
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <div>規程の一覧を読み込み中...</div>
+    </div>
+
+    <div class="msg msg-warn" id="customer-missing" hidden></div>
+  </div>
+
+  <div class="card" id="list-card" hidden>
+    <div class="list-header">
+      <h2>作成できる規程</h2>
+      <span class="count" id="count"></span>
+    </div>
+    <div class="select-actions">
+      <button type="button" id="btn-all">すべて選択</button>
+      <button type="button" id="btn-none">すべて解除</button>
+      <button type="button" id="btn-notissued">未発行のみ選択</button>
+    </div>
+    <div id="items"></div>
+
+    <button class="btn btn-primary" id="run-btn" type="button">作成する</button>
+    <div class="msg msg-info" id="run-msg" hidden></div>
+  </div>
+
+  <div class="footer">SCS★3 取得支援コンサルティングサービス</div>
+</div>
+
+<script>
+// ---- バックエンドとの取り決め（契約）----------------------------------------
+// どちらも POST。認証は案内リンクの tok・exp（scs-tasks などと同じ）。
+//
+// listRegulations        { tenant_id, tok, exp }
+//   → { ok, company_name,
+//       customer_missing: [ "セキュリティ担当部署名", ... ],     // 顧客情報DBで空の項目
+//       regulations: [ { regulation_id, name, group,
+//                        missing: [ "セキュリティ担当部署名", ... ], // この規程が使う項目のうち空のもの
+//                        issued: [ { issue_id, generated_at, file_url } ] } ] }  // 発行履歴（新しい順）
+//
+// generateSelectedRegulations   { tenant_id, tok, exp, regulation_ids: [ "GOV-001", ... ] }
+//   → 202 { ok: true, started: <件数> }   ※ 生成は裏で続く。結果は listRegulations の issued に増える
+// -----------------------------------------------------------------------------
+const CF = 'https://asia-northeast1-scs-star3-service.cloudfunctions.net';
+const POLL_MS = 10000;
+const POLL_LIMIT_MS = 20 * 60 * 1000;
+
+const params = new URLSearchParams(location.search);
+const auth = { tenant_id: params.get('t') || '', tok: params.get('tok') || '', exp: params.get('exp') || '' };
+const $ = (id) => document.getElementById(id);
+
+let regulations = [];   // 最新の一覧
+let working = null;     // { baseline: {regulation_id: 件数}, startedAt, timer }
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+async function apiPost(endpoint, body) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 60000);
+  try {
+    const res = await fetch(CF + '/' + endpoint, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body), signal: controller.signal,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) throw new Error(data.error || ('エラーが発生しました（' + res.status + '）'));
+    return data;
+  } catch (e) {
+    if (e.name === 'AbortError') throw new Error('応答がありませんでした。時間をおいてもう一度お試しください。');
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function fmtDate(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  return d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate() + ' ' +
+    String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+
+function selectedIds() {
+  return Array.from(document.querySelectorAll('#items input[type=checkbox]:checked')).map((c) => c.value);
+}
+
+function updateButton() {
+  const n = selectedIds().length;
+  const btn = $('run-btn');
+  btn.disabled = working !== null || n === 0;
+  btn.textContent = working ? '作成中...' : (n === 0 ? '規程を選んでください' : '選択した' + n + '件を作成する');
+}
+
+function renderCustomerMissing(list) {
+  const box = $('customer-missing');
+  box.replaceChildren();
+  if (!list || list.length === 0) { box.hidden = true; return; }
+  box.appendChild(el('div', '', '顧客情報DBに未入力の項目があります。このまま作ると、規程の中に「【担当部署名】」のような仮の文字が残ります。'));
+  const ul = el('ul');
+  list.forEach((l) => ul.appendChild(el('li', '', l)));
+  box.appendChild(ul);
+  box.appendChild(el('div', '', '先に Notion の顧客情報DBへ入力してから作ると、規程に反映されます。'));
+  box.hidden = false;
+}
+
+function renderList() {
+  const checkedBefore = new Set(selectedIds());
+  const container = $('items');
+  container.replaceChildren();
+
+  const groups = {};
+  regulations.forEach((r) => { (groups[r.group || 'その他'] = groups[r.group || 'その他'] || []).push(r); });
+  const order = ['基本方針・体制', '規程', '様式・別表', 'その他'];
+  const names = Object.keys(groups).sort((a, b) => {
+    const ai = order.indexOf(a), bi = order.indexOf(b);
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+  });
+
+  names.forEach((g) => {
+    container.appendChild(el('div', 'group-header', g + '（' + groups[g].length + '件）'));
+    groups[g].forEach((r) => {
+      const row = el('div', 'reg-item');
+      const cb = el('input');
+      cb.type = 'checkbox';
+      cb.id = 'cb-' + r.regulation_id;
+      cb.value = r.regulation_id;
+      cb.checked = checkedBefore.has(r.regulation_id);
+      cb.disabled = working !== null;
+      cb.addEventListener('change', updateButton);
+      const label = el('label');
+      label.htmlFor = cb.id;
+
+      const title = el('div', 'reg-name', r.name);
+      title.appendChild(el('span', 'reg-id', r.regulation_id));
+      label.appendChild(title);
+
+      const issued = r.issued || [];
+      if (issued.length === 0) {
+        label.appendChild(el('div', 'reg-meta', '未発行'));
+      } else {
+        const meta = el('div', 'reg-meta');
+        const latest = issued[0];
+        meta.appendChild(document.createTextNode('発行済み ' + issued.length + '件・最新 ' + latest.issue_id + '（' + fmtDate(latest.generated_at) + '）'));
+        if (latest.file_url) {
+          meta.appendChild(document.createTextNode(' '));
+          const a = el('a', '', 'ダウンロード');
+          a.href = latest.file_url;
+          a.target = '_blank';
+          a.rel = 'noopener';
+          meta.appendChild(a);
+        }
+        label.appendChild(meta);
+      }
+      if (r.missing && r.missing.length > 0) {
+        label.appendChild(el('div', 'reg-missing', '顧客情報DBが未入力: ' + r.missing.join('、') + '（仮の文字が残ります）'));
+      }
+      if (working && working.baseline[r.regulation_id] !== undefined) {
+        const done = issued.length > working.baseline[r.regulation_id];
+        const st = el('div', 'reg-state ' + (done ? 'done' : 'working'));
+        if (done) {
+          st.textContent = '✅ 作成しました（' + issued[0].issue_id + '）';
+        } else {
+          st.appendChild(el('span', 'spinner small'));
+          st.appendChild(document.createTextNode('作成中...'));
+        }
+        label.appendChild(st);
+      }
+      row.appendChild(cb);
+      row.appendChild(label);
+      container.appendChild(row);
+    });
+  });
+
+  $('count').textContent = regulations.length + '件';
+  updateButton();
+}
+
+async function load() {
+  const data = await apiPost('listRegulations', auth);
+  regulations = data.regulations || [];
+  $('company').textContent = data.company_name ? data.company_name + '（' + auth.tenant_id + '）' : '会員番号 ' + auth.tenant_id;
+  renderCustomerMissing(data.customer_missing);
+  renderList();
+  return data;
+}
+
+function showRunMsg(type, text) {
+  const box = $('run-msg');
+  box.className = 'msg msg-' + type;
+  box.textContent = text;
+  box.hidden = false;
+}
+
+function finishWorking(allDone) {
+  clearInterval(working.timer);
+  const elapsedOver = Date.now() - working.startedAt >= POLL_LIMIT_MS;
+  working = null;
+  renderList();
+  if (allDone) {
+    showRunMsg('success', '選択した規程をすべて作成しました。ファイルは各規程の「ダウンロード」から、記録は規程発行履歴DBで確認できます。');
+  } else if (elapsedOver) {
+    showRunMsg('warn', '20分たっても作成が確認できない規程があります。規程発行履歴DBを確認し、見当たらなければ、時間をおいてもう一度作成してください。');
+  }
+}
+
+async function poll() {
+  if (!working) return;
+  try {
+    await load();
+  } catch (e) {
+    // 一時的な失敗は次の確認でやり直す
+    return;
+  }
+  const ids = Object.keys(working.baseline);
+  const pending = ids.filter((id) => {
+    const r = regulations.find((x) => x.regulation_id === id);
+    return !r || (r.issued || []).length <= working.baseline[id];
+  });
+  if (pending.length === 0) finishWorking(true);
+  else if (Date.now() - working.startedAt >= POLL_LIMIT_MS) finishWorking(false);
+}
+
+async function run() {
+  const ids = selectedIds();
+  if (ids.length === 0 || working) return;
+  const baseline = {};
+  ids.forEach((id) => {
+    const r = regulations.find((x) => x.regulation_id === id);
+    baseline[id] = r ? (r.issued || []).length : 0;
+  });
+  $('run-msg').hidden = true;
+  working = { baseline, startedAt: Date.now(), timer: null };
+  renderList();
+  try {
+    await apiPost('generateSelectedRegulations', { ...auth, regulation_ids: ids });
+  } catch (e) {
+    working = null;
+    renderList();
+    showRunMsg('error', '作成を始められませんでした: ' + e.message);
+    return;
+  }
+  showRunMsg('info', ids.length + '件の作成を始めました。1件あたり数分かかることがあります。このページを開いたままお待ちください。');
+  working.timer = setInterval(poll, POLL_MS);
+}
+
+function setAll(fn) {
+  document.querySelectorAll('#items input[type=checkbox]').forEach((c) => {
+    const r = regulations.find((x) => x.regulation_id === c.value);
+    c.checked = fn(r);
+  });
+  updateButton();
+}
+
+(async function init() {
+  if (!auth.tenant_id || !auth.tok || !auth.exp) {
+    $('loading').hidden = true;
+    const f = $('fatal');
+    f.textContent = '案内リンクから開いてください。リンクに会員番号と認証情報が含まれていません。';
+    f.hidden = false;
+    return;
+  }
+  $('btn-all').addEventListener('click', () => setAll(() => true));
+  $('btn-none').addEventListener('click', () => setAll(() => false));
+  $('btn-notissued').addEventListener('click', () => setAll((r) => !r.issued || r.issued.length === 0));
+  $('run-btn').addEventListener('click', run);
+  try {
+    await load();
+    $('loading').hidden = true;
+    $('list-card').hidden = false;
+  } catch (e) {
+    $('loading').hidden = true;
+    const f = $('fatal');
+    f.textContent = '規程の一覧を読み込めませんでした: ' + e.message;
+    f.hidden = false;
+  }
+})();
+</script>
+</body>
+</html>
