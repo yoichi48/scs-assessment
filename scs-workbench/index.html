@@ -391,7 +391,8 @@ function renderGroups() {
       }
       return '';
     }).join('');
-    return '<div class="qcard t-group"><div class="qtext">' + (i + 1) + '. ' + esc(g.heading) + '</div>' + body + '</div>';
+    const ex = g.example ? '<div class="subq">（例：' + esc(g.example) + '）<span class="muted small"> AIが業種に合わせて書いた例</span></div>' : '';
+    return '<div class="qcard t-group"><div class="qtext">' + (i + 1) + '. ' + esc(g.heading) + '</div>' + ex + body + '</div>';
   }).join('');
 }
 

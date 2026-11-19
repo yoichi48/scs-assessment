@@ -68,17 +68,19 @@
     let anyMark = false;
     const blocks = (groups || []).map((g, i) => {
       const no = (i + 1) + '. ';
+      const ex = g.example ? '\n （例：' + g.example + '）' : '';
       const closed = g.parts.filter(p => p.type === 'closed');
       if (closed.some(p => isPrefilled(p, prefill) && itemAnswer(p, answers) === 'yes')) anyMark = true;
-      if (g.copy === 'open') return no + g.heading + '\n 回答：';
+      if (g.copy === 'open') return no + g.heading + ex + '\n 回答：';
       if (g.copy === 'single') {
         const p = closed[0];
-        return no + g.heading + (p ? box(p) : '（　）');
+        return no + g.heading + (p ? box(p) : '（　）') + ex;
       }
-      const lines = [no + g.heading];
+      // （　）は行の先頭にそろえる（書き込みやすく、返ってきた答えを縦に読める）
+      const lines = [no + g.heading + ex];
       for (const p of g.parts) {
-        if (p.type === 'closed') lines.push(' ・' + p.label + box(p));
-        else if (p.type === 'other') lines.push(' ・その他：');
+        if (p.type === 'closed') lines.push(' ' + box(p) + p.label);
+        else if (p.type === 'other') lines.push(' その他：');
         else if (p.type === 'none') lines.push(' ' + p.label + '：');
       }
       return lines.join('\n');
