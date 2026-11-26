@@ -27,6 +27,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino San
 .btn-primary { background: var(--primary); color:#fff; width:100%; margin-top:16px; }
 .btn-primary:hover { background: var(--primary-hover); }
 .btn-primary:disabled { background: #94a3b8; cursor:not-allowed; }
+/* 選択ボタンの行の右端。選択の3つ（灰色の枠）と色・余白で分ける */
+.select-actions .btn-secondary { margin-left:auto; padding:6px 14px; border:1px solid var(--primary);
+  border-radius:6px; background:#fff; color: var(--primary); font-size:12px; font-weight:600; }
+.select-actions .btn-secondary:hover { background:#E8EEF4; }
+.select-actions .btn-secondary:disabled { color:#94a3b8; border-color: var(--border); background:#fff; cursor:not-allowed; }
+#dl-msg { margin:0 0 8px; }
 
 .msg { padding:12px 16px; border-radius:10px; font-size:13px; line-height:1.7; margin-top:12px; }
 .msg-info { background:#E8EEF4; color: var(--primary); border:1px solid #B8CDE0; }
@@ -96,7 +102,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino San
       <button type="button" id="btn-all">すべて選択</button>
       <button type="button" id="btn-none">すべて解除</button>
       <button type="button" id="btn-notissued">未発行のみ選択</button>
+      <button class="btn btn-secondary" id="dl-btn" type="button">ダウンロード</button>
     </div>
+    <div class="msg msg-info" id="dl-msg" hidden></div>
     <div id="items"></div>
 
     <button class="btn btn-primary" id="run-btn" type="button">作成する</button>
@@ -119,6 +127,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino San
 //
 // generateSelectedRegulations   { tenant_id, tok, exp, regulation_ids: [ "GOV-001", ... ] }
 //   → 202 { ok: true, started: <件数> }   ※ 生成は裏で続く。結果は listRegulations の issued に増える
+//
+// downloadSelectedRegulations   { tenant_id, tok, exp, regulation_ids: [ "GOV-001", ... ] }
+//   → 200 application/zip（規程ごとに最新の発行1本）
+//     ヘッダー X-Included-Count: 入れた件数／X-Skipped-Regulations: 入れなかった規程ID（カンマ区切り）
+//   → 400/401/500 { ok:false, error }
 // -----------------------------------------------------------------------------
 const CF = 'https://asia-northeast1-scs-star3-service.cloudfunctions.net';
 const POLL_MS = 10000;
@@ -130,6 +143,8 @@ const $ = (id) => document.getElementById(id);
 
 let regulations = [];   // 最新の一覧
 let working = null;     // { baseline: {regulation_id: 件数}, startedAt, timer }
+let downloading = false;
+let companyName = '';
 
 function el(tag, cls, text) {
   const e = document.createElement(tag);
@@ -173,6 +188,81 @@ function updateButton() {
   const btn = $('run-btn');
   btn.disabled = working !== null || n === 0;
   btn.textContent = working ? '作成中...' : (n === 0 ? '規程を選んでください' : '選択した' + n + '件を作成する');
+
+  // ダウンロードできるのは、選んだうち発行済みのものだけ
+  const issuedN = selectedIds().filter((id) => {
+    const r = regulations.find((x) => x.regulation_id === id);
+    return r && (r.issued || []).length > 0;
+  }).length;
+  const dl = $('dl-btn');
+  dl.disabled = working !== null || downloading || issuedN === 0;
+  if (downloading) dl.textContent = 'まとめています...';
+  else if (n === 0) dl.textContent = '最新版をZipでダウンロード';
+  else if (issuedN === 0) dl.textContent = '選んだ規程は未作成です';
+  else dl.textContent = '最新版をZipでダウンロード（' + issuedN + '件）';
+}
+
+function showDlMsg(type, text) {
+  const box = $('dl-msg');
+  box.className = 'msg msg-' + type;
+  box.textContent = text;
+  box.hidden = false;
+}
+
+async function download() {
+  const chosen = selectedIds();
+  const ids = chosen.filter((id) => {
+    const r = regulations.find((x) => x.regulation_id === id);
+    return r && (r.issued || []).length > 0;
+  });
+  if (ids.length === 0 || downloading || working) return;
+  downloading = true;
+  $('dl-msg').hidden = true;
+  updateButton();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 120000);
+  try {
+    const res = await fetch(CF + '/downloadSelectedRegulations', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...auth, regulation_ids: ids }), signal: controller.signal,
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || ('エラーが発生しました（' + res.status + '）'));
+    }
+    const blob = await res.blob();
+    const included = Number(res.headers.get('X-Included-Count')) || ids.length;
+    const skipped = (res.headers.get('X-Skipped-Regulations') || '').split(',').filter(Boolean);
+
+    const name = (companyName || ('会員番号' + auth.tenant_id)).replace(/[\\/:*?"<>|]/g, '') + '_規程.zip';
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+
+    // 選んだのに入らなかった規程（未作成のもの＋ファイルを取り出せなかったもの）を名前で示す
+    const notIssued = chosen.filter((id) => !ids.includes(id));
+    const left = [...notIssued, ...skipped].map((id) => {
+      const r = regulations.find((x) => x.regulation_id === id);
+      return r ? r.name + '（' + id + '）' : id;
+    });
+    if (left.length === 0) {
+      showDlMsg('success', included + '件の最新版をまとめてダウンロードしました。');
+    } else {
+      showDlMsg('warn', included + '件の最新版をまとめてダウンロードしました。次の規程は、作成済みのファイルが見つからないため入っていません:' + left.join('、'));
+    }
+  } catch (e) {
+    const msg = e.name === 'AbortError' ? '応答がありませんでした。時間をおいてもう一度お試しください。' : e.message;
+    showDlMsg('error', 'ダウンロードできませんでした: ' + msg);
+  } finally {
+    clearTimeout(timer);
+    downloading = false;
+    updateButton();
+  }
 }
 
 function renderCustomerMissing(list) {
@@ -259,6 +349,7 @@ function renderList() {
 async function load() {
   const data = await apiPost('listRegulations', auth);
   regulations = data.regulations || [];
+  companyName = data.company_name || '';
   $('company').textContent = data.company_name ? data.company_name + '（' + auth.tenant_id + '）' : '会員番号 ' + auth.tenant_id;
   renderCustomerMissing(data.customer_missing);
   renderList();
@@ -344,6 +435,7 @@ function setAll(fn) {
   $('btn-none').addEventListener('click', () => setAll(() => false));
   $('btn-notissued').addEventListener('click', () => setAll((r) => !r.issued || r.issued.length === 0));
   $('run-btn').addEventListener('click', run);
+  $('dl-btn').addEventListener('click', download);
   try {
     await load();
     $('loading').hidden = true;
