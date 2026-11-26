@@ -118,13 +118,6 @@ textarea#annot-org, textarea#annot-net { min-height:80px; }
       </div>
 
       <div class="block">
-        <div class="blabel">重大ギャップ（最優先）</div>
-        <div class="hint">評価サマリ下部に表示される最大4件。空欄は出力されません。</div>
-        <div class="list" id="gap-list"></div>
-        <button class="add" onclick="addRow('gap-list')">＋ 行を追加</button>
-      </div>
-
-      <div class="block">
         <div class="blabel">推奨アクション（優先順）</div>
         <div class="hint">評価サマリ下部に表示される最大4件。上から順に番号が振られます。</div>
         <div class="list" id="act-list"></div>
@@ -183,7 +176,7 @@ function addRow(listId, value) {
   const input = document.createElement('input');
   input.type = 'text';
   input.value = value || '';
-  input.placeholder = listId === 'gap-list' ? '例: アクセス制御：不適合3件' : '例: 特権ID管理の整備';
+  input.placeholder = '例: 特権ID管理の整備';
   const btn = document.createElement('button');
   btn.type = 'button'; btn.textContent = '×'; btn.title = '削除';
   btn.onclick = () => row.remove();
@@ -204,7 +197,6 @@ function getRows(listId) {
 function buildOverlay() {
   return {
     overallComment: document.getElementById('overall').value,
-    gapItems: getRows('gap-list'),
     actionItems: getRows('act-list'),
     annotations: {
       orgChart: document.getElementById('annot-org').value,
@@ -216,7 +208,6 @@ function buildOverlay() {
 // ---- editable → フォーム ----
 function fillForm(editable, companyName) {
   document.getElementById('overall').value = editable.overallComment || '';
-  setRows('gap-list', editable.gapItems || []);
   setRows('act-list', editable.actionItems || []);
   const annot = editable.annotations || {};
   document.getElementById('annot-org').value = annot.orgChart || '';
